@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 interface StatusBarProps {
-  botStatus: "running" | "paused" | "error";
+  botStatus: "running" | "paused" | "stopped" | "error";
   market: string;
   sessionTime: string;
   connectionStatus: "connected" | "disconnected";
@@ -22,6 +22,7 @@ export default function StatusBar({
   const statusConfig = {
     running: { label: "Running", color: "bg-primary", icon: Activity },
     paused: { label: "Paused", color: "bg-muted-foreground", icon: Pause },
+    stopped: { label: "Stopped", color: "bg-muted-foreground", icon: Pause },
     error: { label: "Error", color: "bg-destructive", icon: Activity },
   };
 
