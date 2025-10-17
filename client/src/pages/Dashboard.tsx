@@ -23,11 +23,11 @@ export default function Dashboard() {
   });
 
   const bots = botsData?.data || [];
-  const selectedBot = bots.find((b: any) => b.instance.id === selectedBotId);
+  const selectedBot = bots.find((b: any) => b.instance?.id === selectedBotId);
 
   // Auto-select first bot if none selected
   useEffect(() => {
-    if (!selectedBotId && bots.length > 0) {
+    if (!selectedBotId && bots.length > 0 && bots[0]?.instance?.id) {
       setSelectedBotId(bots[0].instance.id);
     }
   }, [bots, selectedBotId]);
