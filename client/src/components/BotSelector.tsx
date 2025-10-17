@@ -113,7 +113,7 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot }: BotSel
     },
   });
 
-  const selectedBotData = bots.find(b => b.instance.id === selectedBotId);
+  const selectedBotData = bots.find(b => b.instance?.id === selectedBotId);
   const selectedBotStatus = selectedBotData?.instance?.status;
 
   return (
@@ -124,7 +124,7 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot }: BotSel
             <SelectValue placeholder="Select a bot" />
           </SelectTrigger>
           <SelectContent>
-            {bots.map((bot) => (
+            {bots.filter(bot => bot.instance?.id).map((bot) => (
               <SelectItem key={bot.instance.id} value={bot.instance.id}>
                 {bot.instance.marketSymbol} - {bot.instance.status}
               </SelectItem>
