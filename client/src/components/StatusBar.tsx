@@ -32,39 +32,39 @@ export default function StatusBar({
   return (
     <div className="sticky top-0 z-50 border-b border-border bg-background">
       <div className="border-b border-primary/30" />
-      <div className="flex items-center justify-between px-6 py-3">
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between px-4 sm:px-6 py-2 sm:py-3">
+        <div className="flex items-center gap-2 sm:gap-6">
+          <div className="flex items-center gap-2 sm:gap-3">
             <div className={`h-2 w-2 rounded-full ${config.color} animate-pulse`} />
-            <div className="flex items-center gap-2">
-              <StatusIcon className="h-4 w-4" data-testid="icon-status" />
-              <span className="text-sm font-medium" data-testid="text-bot-status">
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              <StatusIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" data-testid="icon-status" />
+              <span className="text-xs sm:text-sm font-medium" data-testid="text-bot-status">
                 {config.label}
               </span>
             </div>
           </div>
           
-          <div className="h-4 w-px bg-border" />
+          <div className="h-4 w-px bg-border hidden sm:block" />
           
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground uppercase tracking-wider">Market</span>
-            <Badge variant="outline" className="font-mono" data-testid="badge-market">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <span className="text-xs text-muted-foreground uppercase tracking-wider hidden sm:inline">Market</span>
+            <Badge variant="outline" className="font-mono text-xs" data-testid="badge-market">
               {market}
             </Badge>
           </div>
           
-          <div className="h-4 w-px bg-border" />
+          <div className="h-4 w-px bg-border hidden md:block" />
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 hidden md:flex">
             <span className="text-xs text-muted-foreground uppercase tracking-wider">Session</span>
-            <span className="font-mono text-sm" data-testid="text-session-time">
+            <span className="font-mono text-xs sm:text-sm" data-testid="text-session-time">
               {sessionTime}
             </span>
           </div>
           
-          <div className="h-4 w-px bg-border" />
+          <div className="h-4 w-px bg-border hidden lg:block" />
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 hidden lg:flex">
             <div className={`h-1.5 w-1.5 rounded-full ${connectionStatus === 'connected' ? 'bg-primary' : 'bg-destructive'}`} />
             <span className="text-xs text-muted-foreground" data-testid="text-connection-status">
               {connectionStatus}
@@ -72,32 +72,34 @@ export default function StatusBar({
           </div>
         </div>
         
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           <Button
             size="sm"
             variant="outline"
             onClick={onPauseResume}
             data-testid="button-pause-resume"
+            className="h-8"
           >
             {botStatus === "running" ? (
               <>
-                <Pause className="h-3.5 w-3.5 mr-1.5" />
-                Pause
+                <Pause className="h-3 w-3 sm:h-3.5 sm:w-3.5 sm:mr-1.5" />
+                <span className="hidden sm:inline">Pause</span>
               </>
             ) : (
               <>
-                <Play className="h-3.5 w-3.5 mr-1.5" />
-                Resume
+                <Play className="h-3 w-3 sm:h-3.5 sm:w-3.5 sm:mr-1.5" />
+                <span className="hidden sm:inline">Resume</span>
               </>
             )}
           </Button>
           <Button
-            size="sm"
+            size="icon"
             variant="ghost"
             onClick={onSettings}
             data-testid="button-settings"
+            className="h-8 w-8"
           >
-            <Settings className="h-4 w-4" />
+            <Settings className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           </Button>
         </div>
       </div>

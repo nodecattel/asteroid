@@ -22,11 +22,11 @@ export default function MetricCard({
   progress,
 }: MetricCardProps) {
   return (
-    <Card className="p-4 hover-elevate" data-testid={`card-metric-${label.toLowerCase().replace(/\s+/g, '-')}`}>
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-2">
-          {Icon && <Icon className="h-4 w-4 text-muted-foreground" />}
-          <span className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
+    <Card className="p-3 sm:p-4 hover-elevate" data-testid={`card-metric-${label.toLowerCase().replace(/\s+/g, '-')}`}>
+      <div className="flex items-start justify-between mb-2 sm:mb-3">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {Icon && <Icon className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />}
+          <span className="text-[10px] sm:text-xs text-muted-foreground uppercase tracking-wider font-medium">
             {label}
           </span>
         </div>
@@ -44,13 +44,13 @@ export default function MetricCard({
         )}
       </div>
       
-      <div className="mb-2">
-        <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-semibold font-mono tabular-nums" data-testid={`text-${label.toLowerCase().replace(/\s+/g, '-')}`}>
+      <div className="mb-1 sm:mb-2">
+        <div className="flex items-baseline gap-1.5 sm:gap-2">
+          <span className="text-xl sm:text-3xl font-semibold font-mono tabular-nums" data-testid={`text-${label.toLowerCase().replace(/\s+/g, '-')}`}>
             {value}
           </span>
           {unit && (
-            <span className="text-sm text-muted-foreground font-mono">{unit}</span>
+            <span className="text-xs sm:text-sm text-muted-foreground font-mono">{unit}</span>
           )}
         </div>
       </div>

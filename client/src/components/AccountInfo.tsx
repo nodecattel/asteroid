@@ -76,31 +76,31 @@ export default function AccountInfo() {
           <CardDescription>Real-time wallet and margin information</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div className="space-y-1">
-              <div className="text-sm text-muted-foreground">Total Wallet Balance</div>
-              <div className="text-2xl font-bold font-mono" data-testid="text-wallet-balance">
+              <div className="text-xs sm:text-sm text-muted-foreground">Total Wallet Balance</div>
+              <div className="text-xl sm:text-2xl font-bold font-mono" data-testid="text-wallet-balance">
                 ${totalWalletBalance.toFixed(2)}
               </div>
             </div>
             <div className="space-y-1">
-              <div className="text-sm text-muted-foreground">Available Balance</div>
-              <div className="text-2xl font-bold font-mono" data-testid="text-available-balance">
+              <div className="text-xs sm:text-sm text-muted-foreground">Available Balance</div>
+              <div className="text-xl sm:text-2xl font-bold font-mono" data-testid="text-available-balance">
                 ${availableBalance.toFixed(2)}
               </div>
             </div>
             <div className="space-y-1">
-              <div className="text-sm text-muted-foreground">Unrealized PnL</div>
-              <div className={`text-xl font-bold font-mono flex items-center gap-1 ${
+              <div className="text-xs sm:text-sm text-muted-foreground">Unrealized PnL</div>
+              <div className={`text-lg sm:text-xl font-bold font-mono flex items-center gap-1 ${
                 unrealizedPnL > 0 ? 'text-green-500' : unrealizedPnL < 0 ? 'text-red-500' : ''
               }`} data-testid="text-unrealized-pnl">
-                {unrealizedPnL > 0 ? <TrendingUp className="w-4 h-4" /> : unrealizedPnL < 0 ? <TrendingDown className="w-4 h-4" /> : null}
+                {unrealizedPnL > 0 ? <TrendingUp className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : unrealizedPnL < 0 ? <TrendingDown className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : null}
                 ${unrealizedPnL >= 0 ? '+' : ''}{unrealizedPnL.toFixed(2)}
               </div>
             </div>
             <div className="space-y-1">
-              <div className="text-sm text-muted-foreground">Margin Balance</div>
-              <div className="text-xl font-bold font-mono" data-testid="text-margin-balance">
+              <div className="text-xs sm:text-sm text-muted-foreground">Margin Balance</div>
+              <div className="text-lg sm:text-xl font-bold font-mono" data-testid="text-margin-balance">
                 ${parseFloat(balance?.totalMarginBalance || '0').toFixed(2)}
               </div>
             </div>
@@ -156,7 +156,7 @@ export default function AccountInfo() {
                         {pnl >= 0 ? '+' : ''}{pnl.toFixed(2)} USDT ({pnlPercent >= 0 ? '+' : ''}{pnlPercent.toFixed(2)}%)
                       </div>
                     </div>
-                    <div className="grid grid-cols-3 gap-2 text-xs">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
                       <div>
                         <div className="text-muted-foreground">Size</div>
                         <div className="font-mono">{Math.abs(posAmt).toFixed(4)}</div>
@@ -165,7 +165,7 @@ export default function AccountInfo() {
                         <div className="text-muted-foreground">Entry Price</div>
                         <div className="font-mono">${entryPrice.toFixed(2)}</div>
                       </div>
-                      <div>
+                      <div className="col-span-2 sm:col-span-1">
                         <div className="text-muted-foreground">Mark Price</div>
                         <div className="font-mono">${markPrice.toFixed(2)}</div>
                       </div>
