@@ -166,13 +166,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const config = botConfigSchema.parse(req.body);
       const botId = await botManager.createBot(config);
       
-      // Automatically start the bot after creation
-      await botManager.startBot(botId);
-      
+      // Send response immediately
       res.json({
         success: true,
         data: { botId }
       });
+      
+      // Start the bot asynchronously after responding
+      setTimeout(async () => {
+        try {
+          await botManager.startBot(botId);
+          console.log(`Bot ${botId} auto-started successfully`);
+        } catch (error: any) {
+          console.error(`Failed to auto-start bot ${botId}:`, error.message);
+        }
+      }, 100);
     } catch (error: any) {
       res.status(400).json({
         success: false,
