@@ -28,13 +28,11 @@ export class AsterdexClient {
       },
     });
 
-    // Initialize rate limits (will be updated from API responses)
     this.rateLimits = {
       requestWeight: { limit: 2400, used: 0, resetAt: Date.now() + 60000 },
       orders: { limit: 1200, used: 0, resetAt: Date.now() + 60000 },
     };
 
-    // Add response interceptor to track rate limits
     this.axiosInstance.interceptors.response.use(
       (response: any) => {
         this.updateRateLimitsFromHeaders(response.headers);
@@ -44,10 +42,8 @@ export class AsterdexClient {
         if (error.response) {
           this.updateRateLimitsFromHeaders(error.response.headers);
           
-          // Handle rate limit errors
           if (error.response.status === 429) {
             console.error('Rate limit exceeded, backing off...');
-            // Implement exponential backoff
             return this.handleRateLimitError(error);
           }
           
@@ -62,7 +58,6 @@ export class AsterdexClient {
   }
 
   private updateRateLimitsFromHeaders(headers: any) {
-    // Update request weight limits
     const weightHeader = Object.keys(headers).find(key => 
       key.toLowerCase().includes('x-mbx-used-weight')
     );
@@ -70,7 +65,6 @@ export class AsterdexClient {
       this.rateLimits.requestWeight.used = parseInt(headers[weightHeader]) || 0;
     }
 
-    // Update order count limits
     const orderHeader = Object.keys(headers).find(key => 
       key.toLowerCase().includes('x-mbx-order-count')
     );
@@ -80,11 +74,8 @@ export class AsterdexClient {
   }
 
   private async handleRateLimitError(error: any) {
-    // Wait before retrying
-    const backoffMs = 1000; // Start with 1 second
+    const backoffMs = 1000;
     await this.sleep(backoffMs);
-    
-    // Retry the request
     return this.axiosInstance.request(error.config);
   }
 
@@ -97,6 +88,7 @@ export class AsterdexClient {
 
   private buildQueryString(params: Record<string, any>): string {
     return Object.entries(params)
+      .filter(([_, value]) => value !== undefined && value !== null)
       .map(([key, value]) => `${key}=${encodeURIComponent(value)}`)
       .join('&');
   }
@@ -105,24 +97,17 @@ export class AsterdexClient {
     return new Promise(resolve => setTimeout(resolve, ms));
   }
 
-  // Check if we're approaching rate limits
   private shouldBackoff(): boolean {
-    const now = Date.now();
-    
-    // If we're at 80% of request weight limit, back off
     if (this.rateLimits.requestWeight.used > this.rateLimits.requestWeight.limit * 0.8) {
       return true;
     }
-    
-    // If we're at 80% of order limit, back off
     if (this.rateLimits.orders.used > this.rateLimits.orders.limit * 0.8) {
       return true;
     }
-    
     return false;
   }
 
-  // Public API Methods
+  // ========== MARKET DATA ENDPOINTS (PUBLIC) ==========
 
   async ping(): Promise<boolean> {
     try {
@@ -150,15 +135,162 @@ export class AsterdexClient {
     return response.data;
   }
 
-  // Signed endpoints
+  async getRecentTrades(symbol: string, limit: number = 500): Promise<any> {
+    const response = await this.axiosInstance.get('/fapi/v1/trades', {
+      params: { symbol, limit }
+    });
+    return response.data;
+  }
+
+  async getHistoricalTrades(symbol: string, limit: number = 500, fromId?: number): Promise<any> {
+    const response = await this.axiosInstance.get('/fapi/v1/historicalTrades', {
+      params: { symbol, limit, fromId }
+    });
+    return response.data;
+  }
+
+  async getAggregateTrades(symbol: string, params?: { fromId?: number; startTime?: number; endTime?: number; limit?: number }): Promise<any> {
+    const response = await this.axiosInstance.get('/fapi/v1/aggTrades', {
+      params: { symbol, ...params }
+    });
+    return response.data;
+  }
+
+  async getKlines(symbol: string, interval: string, params?: { startTime?: number; endTime?: number; limit?: number }): Promise<any> {
+    const response = await this.axiosInstance.get('/fapi/v1/klines', {
+      params: { symbol, interval, ...params }
+    });
+    return response.data;
+  }
+
+  async getIndexPriceKlines(pair: string, interval: string, params?: { startTime?: number; endTime?: number; limit?: number }): Promise<any> {
+    const response = await this.axiosInstance.get('/fapi/v1/indexPriceKlines', {
+      params: { pair, interval, ...params }
+    });
+    return response.data;
+  }
+
+  async getMarkPriceKlines(symbol: string, interval: string, params?: { startTime?: number; endTime?: number; limit?: number }): Promise<any> {
+    const response = await this.axiosInstance.get('/fapi/v1/markPriceKlines', {
+      params: { symbol, interval, ...params }
+    });
+    return response.data;
+  }
+
+  async getMarkPrice(symbol?: string): Promise<any> {
+    const response = await this.axiosInstance.get('/fapi/v1/premiumIndex', {
+      params: symbol ? { symbol } : {}
+    });
+    return response.data;
+  }
+
+  async getFundingRate(symbol?: string, params?: { startTime?: number; endTime?: number; limit?: number }): Promise<any> {
+    const response = await this.axiosInstance.get('/fapi/v1/fundingRate', {
+      params: { symbol, ...params }
+    });
+    return response.data;
+  }
+
+  async get24hrTicker(symbol?: string): Promise<any> {
+    const response = await this.axiosInstance.get('/fapi/v1/ticker/24hr', {
+      params: symbol ? { symbol } : {}
+    });
+    return response.data;
+  }
+
+  async getSymbolPriceTicker(symbol?: string): Promise<any> {
+    const response = await this.axiosInstance.get('/fapi/v1/ticker/price', {
+      params: symbol ? { symbol } : {}
+    });
+    return response.data;
+  }
+
+  async getBookTicker(symbol?: string): Promise<any> {
+    const response = await this.axiosInstance.get('/fapi/v1/ticker/bookTicker', {
+      params: symbol ? { symbol } : {}
+    });
+    return response.data;
+  }
+
+  // ========== ACCOUNT/TRADE ENDPOINTS (SIGNED) ==========
+
+  async changePositionMode(dualSidePosition: boolean): Promise<any> {
+    const timestamp = Date.now();
+    const params = {
+      dualSidePosition: dualSidePosition.toString(),
+      timestamp,
+      recvWindow: 5000,
+    };
+
+    const queryString = this.buildQueryString(params);
+    const signature = this.createSignature(queryString);
+
+    const response = await this.axiosInstance.post(
+      `/fapi/v1/positionSide/dual?${queryString}&signature=${signature}`
+    );
+    return response.data;
+  }
+
+  async getPositionMode(): Promise<any> {
+    const timestamp = Date.now();
+    const params = { timestamp, recvWindow: 5000 };
+
+    const queryString = this.buildQueryString(params);
+    const signature = this.createSignature(queryString);
+
+    const response = await this.axiosInstance.get(
+      `/fapi/v1/positionSide/dual?${queryString}&signature=${signature}`
+    );
+    return response.data;
+  }
+
+  async changeMultiAssetsMode(multiAssetsMargin: boolean): Promise<any> {
+    const timestamp = Date.now();
+    const params = {
+      multiAssetsMargin: multiAssetsMargin.toString(),
+      timestamp,
+      recvWindow: 5000,
+    };
+
+    const queryString = this.buildQueryString(params);
+    const signature = this.createSignature(queryString);
+
+    const response = await this.axiosInstance.post(
+      `/fapi/v1/multiAssetsMargin?${queryString}&signature=${signature}`
+    );
+    return response.data;
+  }
+
+  async getMultiAssetsMode(): Promise<any> {
+    const timestamp = Date.now();
+    const params = { timestamp, recvWindow: 5000 };
+
+    const queryString = this.buildQueryString(params);
+    const signature = this.createSignature(queryString);
+
+    const response = await this.axiosInstance.get(
+      `/fapi/v1/multiAssetsMargin?${queryString}&signature=${signature}`
+    );
+    return response.data;
+  }
+
   async placeOrder(params: {
     symbol: string;
     side: 'BUY' | 'SELL';
-    type: 'LIMIT' | 'MARKET';
-    quantity: number;
+    type: 'LIMIT' | 'MARKET' | 'STOP' | 'STOP_MARKET' | 'TAKE_PROFIT' | 'TAKE_PROFIT_MARKET' | 'TRAILING_STOP_MARKET';
+    quantity?: number;
     price?: number;
     timeInForce?: 'GTC' | 'IOC' | 'FOK' | 'GTX';
+    positionSide?: 'BOTH' | 'LONG' | 'SHORT';
+    reduceOnly?: boolean;
     newClientOrderId?: string;
+    stopPrice?: number;
+    closePosition?: boolean;
+    activationPrice?: number;
+    callbackRate?: number;
+    workingType?: 'MARK_PRICE' | 'CONTRACT_PRICE';
+    priceProtect?: boolean;
+    newOrderRespType?: 'ACK' | 'RESULT';
   }): Promise<any> {
     if (this.shouldBackoff()) {
       console.log('Approaching rate limit, adding delay...');
@@ -174,32 +306,64 @@ export class AsterdexClient {
 
     const queryString = this.buildQueryString(orderParams);
     const signature = this.createSignature(queryString);
-    const signedQueryString = `${queryString}&signature=${signature}`;
 
     const response = await this.axiosInstance.post(
-      `/fapi/v1/order?${signedQueryString}`
+      `/fapi/v1/order?${queryString}&signature=${signature}`
     );
     
     return response.data;
   }
 
-  async cancelOrder(symbol: string, orderId?: string, origClientOrderId?: string): Promise<any> {
+  async placeBatchOrders(orders: Array<any>): Promise<any> {
+    if (this.shouldBackoff()) {
+      await this.sleep(500);
+    }
+
     const timestamp = Date.now();
-    const params: any = {
-      symbol,
+    const params = {
+      batchOrders: JSON.stringify(orders),
       timestamp,
       recvWindow: 5000,
     };
+
+    const queryString = this.buildQueryString(params);
+    const signature = this.createSignature(queryString);
+
+    const response = await this.axiosInstance.post(
+      `/fapi/v1/batchOrders?${queryString}&signature=${signature}`
+    );
+    
+    return response.data;
+  }
+
+  async queryOrder(symbol: string, orderId?: string, origClientOrderId?: string): Promise<any> {
+    const timestamp = Date.now();
+    const params: any = { symbol, timestamp, recvWindow: 5000 };
 
     if (orderId) params.orderId = orderId;
     if (origClientOrderId) params.origClientOrderId = origClientOrderId;
 
     const queryString = this.buildQueryString(params);
     const signature = this.createSignature(queryString);
-    const signedQueryString = `${queryString}&signature=${signature}`;
+
+    const response = await this.axiosInstance.get(
+      `/fapi/v1/order?${queryString}&signature=${signature}`
+    );
+    return response.data;
+  }
+
+  async cancelOrder(symbol: string, orderId?: string, origClientOrderId?: string): Promise<any> {
+    const timestamp = Date.now();
+    const params: any = { symbol, timestamp, recvWindow: 5000 };
+
+    if (orderId) params.orderId = orderId;
+    if (origClientOrderId) params.origClientOrderId = origClientOrderId;
+
+    const queryString = this.buildQueryString(params);
+    const signature = this.createSignature(queryString);
 
     const response = await this.axiosInstance.delete(
-      `/fapi/v1/order?${signedQueryString}`
+      `/fapi/v1/order?${queryString}&signature=${signature}`
     );
     
     return response.data;
@@ -207,60 +371,271 @@ export class AsterdexClient {
 
   async cancelAllOrders(symbol: string): Promise<any> {
     const timestamp = Date.now();
-    const params = {
-      symbol,
-      timestamp,
-      recvWindow: 5000,
-    };
+    const params = { symbol, timestamp, recvWindow: 5000 };
 
     const queryString = this.buildQueryString(params);
     const signature = this.createSignature(queryString);
-    const signedQueryString = `${queryString}&signature=${signature}`;
 
     const response = await this.axiosInstance.delete(
-      `/fapi/v1/allOpenOrders?${signedQueryString}`
+      `/fapi/v1/allOpenOrders?${queryString}&signature=${signature}`
     );
     
+    return response.data;
+  }
+
+  async cancelBatchOrders(symbol: string, orderIdList?: number[], origClientOrderIdList?: string[]): Promise<any> {
+    const timestamp = Date.now();
+    const params: any = { symbol, timestamp, recvWindow: 5000 };
+
+    if (orderIdList) params.orderIdList = JSON.stringify(orderIdList);
+    if (origClientOrderIdList) params.origClientOrderIdList = JSON.stringify(origClientOrderIdList);
+
+    const queryString = this.buildQueryString(params);
+    const signature = this.createSignature(queryString);
+
+    const response = await this.axiosInstance.delete(
+      `/fapi/v1/batchOrders?${queryString}&signature=${signature}`
+    );
+    return response.data;
+  }
+
+  async setAutoCancelTimer(symbol: string, countdownTime: number): Promise<any> {
+    const timestamp = Date.now();
+    const params = { symbol, countdownTime, timestamp, recvWindow: 5000 };
+
+    const queryString = this.buildQueryString(params);
+    const signature = this.createSignature(queryString);
+
+    const response = await this.axiosInstance.post(
+      `/fapi/v1/countdownCancelAll?${queryString}&signature=${signature}`
+    );
     return response.data;
   }
 
   async getOpenOrders(symbol?: string): Promise<any> {
     const timestamp = Date.now();
-    const params: any = {
-      timestamp,
-      recvWindow: 5000,
-    };
+    const params: any = { timestamp, recvWindow: 5000 };
 
     if (symbol) params.symbol = symbol;
 
     const queryString = this.buildQueryString(params);
     const signature = this.createSignature(queryString);
-    const signedQueryString = `${queryString}&signature=${signature}`;
 
     const response = await this.axiosInstance.get(
-      `/fapi/v1/openOrders?${signedQueryString}`
+      `/fapi/v1/openOrders?${queryString}&signature=${signature}`
     );
     
+    return response.data;
+  }
+
+  async getAllOrders(symbol: string, params?: { orderId?: number; startTime?: number; endTime?: number; limit?: number }): Promise<any> {
+    const timestamp = Date.now();
+    const queryParams = {
+      symbol,
+      ...params,
+      timestamp,
+      recvWindow: 5000,
+    };
+
+    const queryString = this.buildQueryString(queryParams);
+    const signature = this.createSignature(queryString);
+
+    const response = await this.axiosInstance.get(
+      `/fapi/v1/allOrders?${queryString}&signature=${signature}`
+    );
+    return response.data;
+  }
+
+  async getBalance(): Promise<any> {
+    const timestamp = Date.now();
+    const params = { timestamp, recvWindow: 5000 };
+
+    const queryString = this.buildQueryString(params);
+    const signature = this.createSignature(queryString);
+
+    const response = await this.axiosInstance.get(
+      `/fapi/v2/balance?${queryString}&signature=${signature}`
+    );
     return response.data;
   }
 
   async getAccountInfo(): Promise<any> {
     const timestamp = Date.now();
-    const params = {
-      timestamp,
-      recvWindow: 5000,
-    };
+    const params = { timestamp, recvWindow: 5000 };
 
     const queryString = this.buildQueryString(params);
     const signature = this.createSignature(queryString);
-    const signedQueryString = `${queryString}&signature=${signature}`;
 
     const response = await this.axiosInstance.get(
-      `/fapi/v2/account?${signedQueryString}`
+      `/fapi/v4/account?${queryString}&signature=${signature}`
     );
     
     return response.data;
   }
+
+  async changeLeverage(symbol: string, leverage: number): Promise<any> {
+    const timestamp = Date.now();
+    const params = { symbol, leverage, timestamp, recvWindow: 5000 };
+
+    const queryString = this.buildQueryString(params);
+    const signature = this.createSignature(queryString);
+
+    const response = await this.axiosInstance.post(
+      `/fapi/v1/leverage?${queryString}&signature=${signature}`
+    );
+    return response.data;
+  }
+
+  async changeMarginType(symbol: string, marginType: 'ISOLATED' | 'CROSSED'): Promise<any> {
+    const timestamp = Date.now();
+    const params = { symbol, marginType, timestamp, recvWindow: 5000 };
+
+    const queryString = this.buildQueryString(params);
+    const signature = this.createSignature(queryString);
+
+    const response = await this.axiosInstance.post(
+      `/fapi/v1/marginType?${queryString}&signature=${signature}`
+    );
+    return response.data;
+  }
+
+  async modifyPositionMargin(symbol: string, amount: number, type: 1 | 2, positionSide?: 'BOTH' | 'LONG' | 'SHORT'): Promise<any> {
+    const timestamp = Date.now();
+    const params: any = { symbol, amount, type, timestamp, recvWindow: 5000 };
+    if (positionSide) params.positionSide = positionSide;
+
+    const queryString = this.buildQueryString(params);
+    const signature = this.createSignature(queryString);
+
+    const response = await this.axiosInstance.post(
+      `/fapi/v1/positionMargin?${queryString}&signature=${signature}`
+    );
+    return response.data;
+  }
+
+  async getPositionMarginHistory(symbol: string, params?: { type?: number; startTime?: number; endTime?: number; limit?: number }): Promise<any> {
+    const timestamp = Date.now();
+    const queryParams = { symbol, ...params, timestamp, recvWindow: 5000 };
+
+    const queryString = this.buildQueryString(queryParams);
+    const signature = this.createSignature(queryString);
+
+    const response = await this.axiosInstance.get(
+      `/fapi/v1/positionMargin/history?${queryString}&signature=${signature}`
+    );
+    return response.data;
+  }
+
+  async getPositionRisk(symbol?: string): Promise<any> {
+    const timestamp = Date.now();
+    const params: any = { timestamp, recvWindow: 5000 };
+    if (symbol) params.symbol = symbol;
+
+    const queryString = this.buildQueryString(params);
+    const signature = this.createSignature(queryString);
+
+    const response = await this.axiosInstance.get(
+      `/fapi/v2/positionRisk?${queryString}&signature=${signature}`
+    );
+    return response.data;
+  }
+
+  async getUserTrades(symbol: string, params?: { startTime?: number; endTime?: number; fromId?: number; limit?: number }): Promise<any> {
+    const timestamp = Date.now();
+    const queryParams = { symbol, ...params, timestamp, recvWindow: 5000 };
+
+    const queryString = this.buildQueryString(queryParams);
+    const signature = this.createSignature(queryString);
+
+    const response = await this.axiosInstance.get(
+      `/fapi/v1/userTrades?${queryString}&signature=${signature}`
+    );
+    return response.data;
+  }
+
+  async getIncome(params?: { symbol?: string; incomeType?: string; startTime?: number; endTime?: number; limit?: number }): Promise<any> {
+    const timestamp = Date.now();
+    const queryParams = { ...params, timestamp, recvWindow: 5000 };
+
+    const queryString = this.buildQueryString(queryParams);
+    const signature = this.createSignature(queryString);
+
+    const response = await this.axiosInstance.get(
+      `/fapi/v1/income?${queryString}&signature=${signature}`
+    );
+    return response.data;
+  }
+
+  async getLeverageBracket(symbol?: string): Promise<any> {
+    const timestamp = Date.now();
+    const params: any = { timestamp, recvWindow: 5000 };
+    if (symbol) params.symbol = symbol;
+
+    const queryString = this.buildQueryString(params);
+    const signature = this.createSignature(queryString);
+
+    const response = await this.axiosInstance.get(
+      `/fapi/v1/leverageBracket?${queryString}&signature=${signature}`
+    );
+    return response.data;
+  }
+
+  async getADLQuantile(symbol?: string): Promise<any> {
+    const timestamp = Date.now();
+    const params: any = { timestamp, recvWindow: 5000 };
+    if (symbol) params.symbol = symbol;
+
+    const queryString = this.buildQueryString(params);
+    const signature = this.createSignature(queryString);
+
+    const response = await this.axiosInstance.get(
+      `/fapi/v1/adlQuantile?${queryString}&signature=${signature}`
+    );
+    return response.data;
+  }
+
+  async getForceOrders(params?: { symbol?: string; autoCloseType?: 'LIQUIDATION' | 'ADL'; startTime?: number; endTime?: number; limit?: number }): Promise<any> {
+    const timestamp = Date.now();
+    const queryParams = { ...params, timestamp, recvWindow: 5000 };
+
+    const queryString = this.buildQueryString(queryParams);
+    const signature = this.createSignature(queryString);
+
+    const response = await this.axiosInstance.get(
+      `/fapi/v1/forceOrders?${queryString}&signature=${signature}`
+    );
+    return response.data;
+  }
+
+  async getCommissionRate(symbol: string): Promise<any> {
+    const timestamp = Date.now();
+    const params = { symbol, timestamp, recvWindow: 5000 };
+
+    const queryString = this.buildQueryString(params);
+    const signature = this.createSignature(queryString);
+
+    const response = await this.axiosInstance.get(
+      `/fapi/v1/commissionRate?${queryString}&signature=${signature}`
+    );
+    return response.data;
+  }
+
+  // ========== USER DATA STREAM ENDPOINTS ==========
+
+  async startUserDataStream(): Promise<string> {
+    const response = await this.axiosInstance.post('/fapi/v1/listenKey');
+    return response.data.listenKey;
+  }
+
+  async keepaliveUserDataStream(): Promise<void> {
+    await this.axiosInstance.put('/fapi/v1/listenKey');
+  }
+
+  async closeUserDataStream(): Promise<void> {
+    await this.axiosInstance.delete('/fapi/v1/listenKey');
+  }
+
+  // ========== UTILITY METHODS ==========
 
   getRateLimitStatus(): RateLimitConfig {
     return { ...this.rateLimits };
