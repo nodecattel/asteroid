@@ -92,6 +92,7 @@ export const orderSchema = z.object({
   id: z.string(),
   botId: z.string(),
   clientOrderId: z.string(),
+  exchangeOrderId: z.string().optional(), // Exchange-assigned order ID
   symbol: z.string(),
   side: z.enum(['BUY', 'SELL']),
   type: z.enum(['LIMIT', 'MARKET', 'STOP_MARKET', 'TAKE_PROFIT_MARKET', 'TRAILING_STOP_MARKET']),

@@ -55,15 +55,28 @@ export class BotEngine extends EventEmitter {
   private netPosition: number = 0; // Net position quantity (positive = long, negative = short)
   private circuitBreakerTriggered: boolean = false;
 
+  private botShortId: string;
+
   constructor(botId: string, config: BotConfig) {
     super();
     this.botId = botId;
+    this.botShortId = botId.substring(0, 8).replace(/-/g, ''); // Use first 8 chars, remove dashes
     this.config = config;
     this.client = new AsterdexClient(
       config.apiKey,
       config.apiSecret,
       config.baseUrl
     );
+  }
+  
+  private generateClientOrderId(): string {
+    // Format: {shortId}_{index} (max 36 chars, valid chars only)
+    // Example: "a1b2c3d4_50001" (14 chars)
+    const orderId = `${this.botShortId}_${this.orderIndex++}`;
+    if (orderId.length > 36) {
+      throw new Error(`Client order ID too long: ${orderId.length} chars`);
+    }
+    return orderId;
   }
 
   async initialize(): Promise<void> {
@@ -157,9 +170,19 @@ export class BotEngine extends EventEmitter {
     this.userDataStream.on('ACCOUNT_UPDATE', async (event) => {
       const updateData = event.data.a;
       
+      console.log(`[Bot ${this.botId}] ACCOUNT UPDATE received:`, JSON.stringify(updateData).substring(0, 300));
+      
       // Update position information
       if (updateData.P && Array.isArray(updateData.P)) {
         for (const pos of updateData.P) {
+          console.log(`[Bot ${this.botId}] Position update:`, {
+            symbol: pos.s,
+            amount: pos.pa,
+            entryPrice: pos.ep,
+            unrealizedPnL: pos.up,
+            side: parseFloat(pos.pa) > 0 ? 'LONG' : parseFloat(pos.pa) < 0 ? 'SHORT' : 'NONE'
+          });
+          
           if (pos.s === this.config.marketSymbol) {
             await this.addLog('info', `Position updated: ${pos.pa} @ ${pos.ep}, PnL: ${pos.up}`);
           }
@@ -299,12 +322,17 @@ export class BotEngine extends EventEmitter {
   }
 
   private async runTradingLoop(): Promise<void> {
+    console.log(`[Bot ${this.botId}] 🚀 Trading loop started for ${this.config.marketSymbol}`);
+    
     while (this.isRunning) {
       try {
+        console.log(`[Bot ${this.botId}] 🔄 Loop iteration - fetching orderbook...`);
+        
         // Get current orderbook
         const orderbook = await this.client.getOrderBook(this.config.marketSymbol, 10);
         
         if (!orderbook.bids || !orderbook.asks) {
+          console.log(`[Bot ${this.botId}] ⚠️  No orderbook data, retrying...`);
           await this.sleep(this.config.refreshInterval * 1000);
           continue;
         }
@@ -314,6 +342,8 @@ export class BotEngine extends EventEmitter {
         
         // Use mark price if available for more accurate pricing
         const referencePrice = this.marketData?.markPrice || (bestBid + bestAsk) / 2;
+        
+        console.log(`[Bot ${this.botId}] 💰 Reference price: ${referencePrice}, Bid: ${bestBid}, Ask: ${bestAsk}`);
 
         // Calculate spread
         const spreadAmount = referencePrice * (this.config.spreadBps / 10000);
@@ -338,7 +368,7 @@ export class BotEngine extends EventEmitter {
         // Prepare buy orders
         for (let i = 0; i < Math.min(this.config.ordersPerSide, this.config.maxOrdersToPlace); i++) {
           const price = this.formatPrice(referencePrice - spreadAmount - (i * spreadAmount * 0.1));
-          const clientOrderId = `${this.botId}_${this.orderIndex++}`;
+          const clientOrderId = this.generateClientOrderId();
           
           batchOrders.push({
             symbol: this.config.marketSymbol,
@@ -368,7 +398,7 @@ export class BotEngine extends EventEmitter {
         // Prepare sell orders
         for (let i = 0; i < Math.min(this.config.ordersPerSide, this.config.maxOrdersToPlace); i++) {
           const price = this.formatPrice(referencePrice + spreadAmount + (i * spreadAmount * 0.1));
-          const clientOrderId = `${this.botId}_${this.orderIndex++}`;
+          const clientOrderId = this.generateClientOrderId();
           
           batchOrders.push({
             symbol: this.config.marketSymbol,
@@ -401,27 +431,46 @@ export class BotEngine extends EventEmitter {
           const batch = batchOrders.slice(i, i + maxBatchSize);
           
           try {
-            await this.client.placeBatchOrders(batch);
-            await this.addLog('info', `Placed ${batch.length} orders`);
+            const batchResponse = await this.client.placeBatchOrders(batch);
+            console.log(`[Bot ${this.botId}] Batch order response:`, JSON.stringify(batchResponse).substring(0, 200));
+            await this.addLog('info', `Placed ${batch.length} orders on exchange`);
             
-            // Update order statuses
-            for (const order of batch) {
-              await storage.updateOrderByClientId(order.newClientOrderId, { status: 'NEW' });
+            // Update order statuses with exchange order IDs
+            if (Array.isArray(batchResponse)) {
+              for (let idx = 0; idx < batchResponse.length; idx++) {
+                const orderResp = batchResponse[idx];
+                if (orderResp.orderId) {
+                  await storage.updateOrderByClientId(batch[idx].newClientOrderId, { 
+                    status: orderResp.status || 'NEW',
+                    exchangeOrderId: orderResp.orderId?.toString()
+                  });
+                  console.log(`[Bot ${this.botId}] Order ${batch[idx].newClientOrderId} placed: ID ${orderResp.orderId}`);
+                } else if (orderResp.code) {
+                  await storage.updateOrderByClientId(batch[idx].newClientOrderId, { status: 'FAILED' });
+                  await this.addLog('error', `Order ${idx + 1} failed: ${orderResp.msg}`);
+                }
+              }
             }
             
             this.emit('ordersBatchPlaced', { botId: this.botId, count: batch.length });
             
             await this.sleep(this.config.delayBetweenOrders * 1000);
           } catch (error: any) {
+            console.error(`[Bot ${this.botId}] Batch order error:`, error.message, error.response?.data);
             await this.addLog('error', `Failed to place batch orders: ${error.message}`);
             
             // Fall back to individual orders
             for (const order of batch) {
               try {
-                await this.client.placeOrder(order);
-                await storage.updateOrderByClientId(order.newClientOrderId, { status: 'NEW' });
+                const singleResponse = await this.client.placeOrder(order);
+                console.log(`[Bot ${this.botId}] Single order placed:`, singleResponse.orderId);
+                await storage.updateOrderByClientId(order.newClientOrderId, { 
+                  status: 'NEW',
+                  exchangeOrderId: singleResponse.orderId?.toString()
+                });
                 await this.sleep(this.config.delayBetweenOrders * 1000);
               } catch (individualError: any) {
+                console.error(`[Bot ${this.botId}] Individual order error:`, individualError.message);
                 await this.addLog('error', `Failed to place ${order.side} order: ${individualError.message}`);
                 await storage.updateOrderByClientId(order.newClientOrderId, { status: 'FAILED' });
               }

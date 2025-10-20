@@ -12,8 +12,10 @@ The Asterdex Volume Generator Bot is a comprehensive trading application designe
 - 🐛 **Critical Bug Fix**: Fixed bot selector data structure mismatch - bots are now correctly accessed as `bot.id`, `bot.marketSymbol`, `bot.status` (not `bot.instance.*`)
 - ✅ **Auto-Start Feature**: Bots now automatically start trading immediately after creation (async background start prevents UI blocking)
 - ✅ **Activity Feed Working**: Real-time trading activity displayed with WebSocket updates showing order placement, fills, and system events
-- ✅ **End-to-End Workflow Complete**: Create bot → Auto-start → Live trading activity → All working perfectly
 - ✅ **Fast Response Time**: Bot creation dialog closes instantly (<100ms response) with background initialization
+- 🐛 **Critical Order ID Fix**: Fixed "Client order id is not valid" error by generating compliant IDs (<36 chars, valid pattern)
+- ✅ **Comprehensive Logging**: Added detailed server logs to track order placement, fills, position updates, and API responses
+- ✅ **Real Order Placement**: Bots now successfully place actual orders on Asterdex exchange with proper validation
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
