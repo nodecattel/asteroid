@@ -1,7 +1,7 @@
 import { AsterdexClient } from './asterdex-client';
 import { UserDataStreamManager } from './user-data-stream';
 import { storage } from './storage';
-import { BotConfig, Order, ActivityLog } from '@shared/schema';
+import { BotConfig, Order, ActivityLog, Position } from '@shared/schema';
 import { EventEmitter } from 'events';
 
 interface MarketData {
@@ -15,6 +15,18 @@ interface RiskMetrics {
   adlQuantile: any;
   positionRisk: any[];
   leverageBracket: any;
+}
+
+interface TrackedPosition {
+  side: 'LONG' | 'SHORT';
+  entryPrice: number;
+  quantity: number;
+  stopLossOrderId?: string;
+  takeProfitOrderId?: string;
+  trailingStopOrderId?: string;
+  peakProfit: number;
+  warningTriggered50: boolean;
+  warningTriggered75: boolean;
 }
 
 export class BotEngine extends EventEmitter {
@@ -37,6 +49,11 @@ export class BotEngine extends EventEmitter {
 
   // Performance tracking
   private commissionRate: { maker: number; taker: number } | null = null;
+
+  // Position tracking (NEW)
+  private positions: Map<string, TrackedPosition> = new Map();
+  private netPosition: number = 0; // Net position quantity (positive = long, negative = short)
+  private circuitBreakerTriggered: boolean = false;
 
   constructor(botId: string, config: BotConfig) {
     super();
@@ -412,6 +429,9 @@ export class BotEngine extends EventEmitter {
           }
         }
 
+        // Check manual TP/SL and circuit breaker (Layer 2 protection)
+        await this.checkManualTPSL();
+
         // Wait before next refresh
         await this.sleep(this.config.refreshInterval * 1000);
 
@@ -436,7 +456,338 @@ export class BotEngine extends EventEmitter {
       totalTrades: stats.totalTrades + 1,
       totalFees: stats.totalFees + commission,
     });
+
+    // Update position tracking (NEW)
+    await this.updatePositionTracking(side, quantity, price);
   }
+
+  // ===== POSITION TRACKING & RISK MANAGEMENT (NEW) =====
+
+  private async updatePositionTracking(side: string, quantity: number, price: number): Promise<void> {
+    try {
+      // Update net position
+      const quantityChange = side === 'BUY' ? quantity : -quantity;
+      this.netPosition += quantityChange;
+
+      // Determine if we're opening a new position or closing existing one
+      const positionId = `${this.config.marketSymbol}_${this.botId}`;
+      const existingPosition = this.positions.get(positionId);
+
+      if (Math.abs(this.netPosition) > 0.0001) { // Position exists
+        const positionSide: 'LONG' | 'SHORT' = this.netPosition > 0 ? 'LONG' : 'SHORT';
+        
+        if (!existingPosition || existingPosition.side !== positionSide) {
+          // New position opened
+          const newPosition: TrackedPosition = {
+            side: positionSide,
+            entryPrice: price,
+            quantity: Math.abs(this.netPosition),
+            peakProfit: 0,
+            warningTriggered50: false,
+            warningTriggered75: false,
+          };
+          
+          this.positions.set(positionId, newPosition);
+          await this.addLog('info', `Position opened: ${positionSide} ${Math.abs(this.netPosition)} @ ${price}`);
+          
+          // Place native TP/SL orders (Layer 1 protection)
+          await this.placeProtectionOrders(positionId, newPosition);
+        } else {
+          // Position size changed - update entry price (weighted average)
+          const totalQty = existingPosition.quantity + Math.abs(quantityChange);
+          const totalCost = (existingPosition.entryPrice * existingPosition.quantity) + (price * Math.abs(quantityChange));
+          existingPosition.entryPrice = totalCost / totalQty;
+          existingPosition.quantity = Math.abs(this.netPosition);
+          
+          await this.addLog('info', `Position updated: ${positionSide} ${existingPosition.quantity} @ ${existingPosition.entryPrice}`);
+          
+          // Update protection orders
+          await this.updateProtectionOrders(positionId, existingPosition);
+        }
+      } else {
+        // Position closed
+        if (existingPosition) {
+          await this.addLog('success', `Position closed: ${existingPosition.side}`);
+          await this.cancelProtectionOrders(positionId, existingPosition);
+          this.positions.delete(positionId);
+        }
+      }
+
+      this.emit('positionUpdated', { botId: this.botId, netPosition: this.netPosition });
+    } catch (error: any) {
+      console.error('Error updating position tracking:', error);
+    }
+  }
+
+  private async placeProtectionOrders(positionId: string, position: TrackedPosition): Promise<void> {
+    try {
+      const markPrice = this.marketData?.markPrice || position.entryPrice;
+
+      // Calculate TP/SL prices
+      const stopLossPrice = position.side === 'LONG'
+        ? position.entryPrice * (1 - this.config.stopLossPercent / 100)
+        : position.entryPrice * (1 + this.config.stopLossPercent / 100);
+
+      const takeProfitPrice = position.side === 'LONG'
+        ? position.entryPrice * (1 + this.config.takeProfitPercent / 100)
+        : position.entryPrice * (1 - this.config.takeProfitPercent / 100);
+
+      // Place Stop-Loss order (Layer 1)
+      if (this.config.enableStopLoss) {
+        try {
+          const stopLossOrder = await this.client.placeOrder({
+            symbol: this.config.marketSymbol,
+            side: position.side === 'LONG' ? 'SELL' : 'BUY',
+            type: 'STOP_MARKET',
+            stopPrice: this.formatPrice(stopLossPrice),
+            closePosition: true,
+            workingType: 'MARK_PRICE',
+            priceProtect: true,
+          });
+
+          position.stopLossOrderId = stopLossOrder.orderId?.toString();
+          await this.addLog('success', `Stop-loss placed at ${this.formatPrice(stopLossPrice)} (${this.config.stopLossPercent}%)`);
+        } catch (error: any) {
+          await this.addLog('error', `Failed to place stop-loss: ${error.message}`);
+        }
+      }
+
+      // Place Take-Profit order (Layer 1)
+      if (this.config.enableTakeProfit) {
+        try {
+          const takeProfitOrder = await this.client.placeOrder({
+            symbol: this.config.marketSymbol,
+            side: position.side === 'LONG' ? 'SELL' : 'BUY',
+            type: 'TAKE_PROFIT_MARKET',
+            stopPrice: this.formatPrice(takeProfitPrice),
+            closePosition: true,
+            workingType: 'MARK_PRICE',
+          });
+
+          position.takeProfitOrderId = takeProfitOrder.orderId?.toString();
+          await this.addLog('success', `Take-profit placed at ${this.formatPrice(takeProfitPrice)} (${this.config.takeProfitPercent}%)`);
+        } catch (error: any) {
+          await this.addLog('error', `Failed to place take-profit: ${error.message}`);
+        }
+      }
+
+    } catch (error: any) {
+      console.error('Error placing protection orders:', error);
+    }
+  }
+
+  private async updateProtectionOrders(positionId: string, position: TrackedPosition): Promise<void> {
+    // Cancel existing protection orders
+    await this.cancelProtectionOrders(positionId, position);
+    
+    // Place new protection orders with updated prices
+    await this.placeProtectionOrders(positionId, position);
+  }
+
+  private async cancelProtectionOrders(positionId: string, position: TrackedPosition): Promise<void> {
+    try {
+      // Cancel stop-loss
+      if (position.stopLossOrderId) {
+        try {
+          await this.client.cancelOrder(this.config.marketSymbol, { orderId: position.stopLossOrderId });
+        } catch (error) {
+          // Order might already be filled or cancelled
+        }
+      }
+
+      // Cancel take-profit
+      if (position.takeProfitOrderId) {
+        try {
+          await this.client.cancelOrder(this.config.marketSymbol, { orderId: position.takeProfitOrderId });
+        } catch (error) {
+          // Order might already be filled or cancelled
+        }
+      }
+
+      // Cancel trailing stop
+      if (position.trailingStopOrderId) {
+        try {
+          await this.client.cancelOrder(this.config.marketSymbol, { orderId: position.trailingStopOrderId });
+        } catch (error) {
+          // Order might already be filled or cancelled
+        }
+      }
+    } catch (error: any) {
+      console.error('Error cancelling protection orders:', error);
+    }
+  }
+
+  private async checkManualTPSL(): Promise<void> {
+    // Layer 2: Manual fallback protection
+    if (!this.marketData) return;
+
+    for (const [positionId, position] of this.positions) {
+      try {
+        const markPrice = this.marketData.markPrice;
+        const pnlPercent = this.calculatePnLPercent(position, markPrice);
+
+        // Check stop-loss trigger
+        if (this.config.enableStopLoss) {
+          const stopLossTriggered = position.side === 'LONG'
+            ? pnlPercent <= -this.config.stopLossPercent
+            : pnlPercent >= this.config.stopLossPercent;
+
+          if (stopLossTriggered) {
+            await this.addLog('warning', `Manual stop-loss triggered! PnL: ${pnlPercent.toFixed(2)}%`);
+            await this.closePosition(position);
+            this.positions.delete(positionId);
+          }
+        }
+
+        // Check take-profit trigger
+        if (this.config.enableTakeProfit) {
+          const takeProfitTriggered = position.side === 'LONG'
+            ? pnlPercent >= this.config.takeProfitPercent
+            : pnlPercent <= -this.config.takeProfitPercent;
+
+          if (takeProfitTriggered) {
+            await this.addLog('success', `Manual take-profit triggered! PnL: ${pnlPercent.toFixed(2)}%`);
+            await this.closePosition(position);
+            this.positions.delete(positionId);
+          }
+        }
+
+        // Check trailing stop
+        if (this.config.enableTrailingStop) {
+          await this.checkTrailingStop(positionId, position, markPrice);
+        }
+
+        // Update position health
+        await this.updatePositionHealth(positionId, position, markPrice);
+
+      } catch (error: any) {
+        console.error('Error checking manual TP/SL:', error);
+      }
+    }
+
+    // Check circuit breaker
+    await this.checkCircuitBreaker();
+  }
+
+  private async checkTrailingStop(positionId: string, position: TrackedPosition, markPrice: number): Promise<void> {
+    const pnlPercent = this.calculatePnLPercent(position, markPrice);
+    
+    // Update peak profit
+    if (pnlPercent > position.peakProfit) {
+      position.peakProfit = pnlPercent;
+    }
+
+    // Check if trailing stop should activate
+    if (!position.trailingStopActive && pnlPercent >= this.config.trailingStopActivationPercent) {
+      // Activate trailing stop
+      try {
+        const callbackRate = this.config.trailingStopCallbackRate;
+        const activationPrice = markPrice;
+
+        const trailingStopOrder = await this.client.placeOrder({
+          symbol: this.config.marketSymbol,
+          side: position.side === 'LONG' ? 'SELL' : 'BUY',
+          type: 'TRAILING_STOP_MARKET',
+          activationPrice: this.formatPrice(activationPrice),
+          callbackRate: callbackRate.toString(),
+          closePosition: true,
+          workingType: 'MARK_PRICE',
+        });
+
+        position.trailingStopOrderId = trailingStopOrder.orderId?.toString();
+        position.trailingStopActive = true;
+        
+        await this.addLog('success', `Trailing stop activated at ${pnlPercent.toFixed(2)}% profit (callback ${callbackRate}%)`);
+      } catch (error: any) {
+        await this.addLog('error', `Failed to place trailing stop: ${error.message}`);
+      }
+    }
+  }
+
+  private async updatePositionHealth(positionId: string, position: TrackedPosition, markPrice: number): Promise<void> {
+    const pnlPercent = this.calculatePnLPercent(position, markPrice);
+    const lossPercent = Math.abs(Math.min(0, pnlPercent));
+    const stopLossPercent = this.config.stopLossPercent;
+
+    // Early warning at 50% of stop-loss
+    if (this.config.earlyWarningThreshold50 && !position.warningTriggered50 && lossPercent >= stopLossPercent * 0.5) {
+      position.warningTriggered50 = true;
+      await this.addLog('warning', `⚠️ Position ${position.side} at 50% of stop-loss threshold! PnL: ${pnlPercent.toFixed(2)}%`);
+      this.emit('positionWarning', { botId: this.botId, level: 50, pnlPercent });
+    }
+
+    // Early warning at 75% of stop-loss
+    if (this.config.earlyWarningThreshold75 && !position.warningTriggered75 && lossPercent >= stopLossPercent * 0.75) {
+      position.warningTriggered75 = true;
+      await this.addLog('warning', `⚠️⚠️ Position ${position.side} at 75% of stop-loss threshold! PnL: ${pnlPercent.toFixed(2)}%`);
+      this.emit('positionWarning', { botId: this.botId, level: 75, pnlPercent });
+    }
+  }
+
+  private async checkCircuitBreaker(): Promise<void> {
+    if (!this.config.circuitBreakerEnabled || this.circuitBreakerTriggered) return;
+
+    try {
+      // Get account positions
+      const positionRisk = await this.client.getPositionRisk(this.config.marketSymbol);
+      let totalUnrealizedPnL = 0;
+
+      for (const pos of positionRisk) {
+        totalUnrealizedPnL += parseFloat(pos.unRealizedProfit || '0');
+      }
+
+      // Check if unrealized loss exceeds threshold
+      if (totalUnrealizedPnL < -this.config.circuitBreakerThreshold) {
+        this.circuitBreakerTriggered = true;
+        await this.addLog('error', `🚨 CIRCUIT BREAKER TRIGGERED! Unrealized loss: ${totalUnrealizedPnL.toFixed(2)} USDT`);
+        
+        // Close all positions
+        await this.closeAllPositions();
+        
+        // Stop the bot
+        await this.pause();
+        
+        this.emit('circuitBreakerTriggered', { botId: this.botId, totalLoss: totalUnrealizedPnL });
+      }
+    } catch (error: any) {
+      console.error('Error checking circuit breaker:', error);
+    }
+  }
+
+  private calculatePnLPercent(position: TrackedPosition, currentPrice: number): number {
+    if (position.side === 'LONG') {
+      return ((currentPrice - position.entryPrice) / position.entryPrice) * 100;
+    } else {
+      return ((position.entryPrice - currentPrice) / position.entryPrice) * 100;
+    }
+  }
+
+  private async closePosition(position: TrackedPosition): Promise<void> {
+    try {
+      await this.client.placeOrder({
+        symbol: this.config.marketSymbol,
+        side: position.side === 'LONG' ? 'SELL' : 'BUY',
+        type: 'MARKET',
+        quantity: this.formatQuantity(position.quantity),
+      });
+
+      await this.addLog('info', `Closed ${position.side} position: ${position.quantity} contracts`);
+    } catch (error: any) {
+      await this.addLog('error', `Failed to close position: ${error.message}`);
+    }
+  }
+
+  private async closeAllPositions(): Promise<void> {
+    for (const [positionId, position] of this.positions) {
+      await this.closePosition(position);
+      await this.cancelProtectionOrders(positionId, position);
+    }
+    
+    this.positions.clear();
+    this.netPosition = 0;
+  }
+
+  // ===== END POSITION TRACKING & RISK MANAGEMENT =====
 
   private async updateStatus(): Promise<void> {
     try {
