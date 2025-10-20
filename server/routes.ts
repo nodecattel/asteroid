@@ -165,6 +165,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const config = botConfigSchema.parse(req.body);
       const botId = await botManager.createBot(config);
+      
+      // Automatically start the bot after creation
+      await botManager.startBot(botId);
+      
       res.json({
         success: true,
         data: { botId }
