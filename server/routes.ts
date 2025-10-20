@@ -240,6 +240,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Update bot configuration
+  app.patch('/api/bots/:botId/config', async (req, res) => {
+    try {
+      const { botId } = req.params;
+      const updates = req.body;
+      await botManager.updateBotConfig(botId, updates);
+      res.json({
+        success: true,
+        data: { message: 'Bot configuration updated' }
+      });
+    } catch (error: any) {
+      res.status(400).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
   // Delete bot
   app.delete('/api/bots/:botId', async (req, res) => {
     try {

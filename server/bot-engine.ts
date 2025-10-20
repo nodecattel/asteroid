@@ -1006,6 +1006,21 @@ export class BotEngine extends EventEmitter {
   getConfig(): BotConfig {
     return { ...this.config };
   }
+  
+  async updateConfig(updates: Partial<BotConfig>): Promise<void> {
+    // Update configuration
+    this.config = { ...this.config, ...updates };
+    
+    // Update in storage
+    await storage.updateBot(this.botId, { config: this.config });
+    
+    // Log the update
+    const updatedFields = Object.keys(updates).join(', ');
+    await this.addLog('info', `Configuration updated: ${updatedFields}`);
+    
+    // Emit event
+    this.emit('configUpdated', { botId: this.botId, config: this.config });
+  }
 
   getMarketData(): MarketData | null {
     return this.marketData;

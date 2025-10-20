@@ -155,6 +155,14 @@ export class BotManager extends EventEmitter {
     };
   }
 
+  async updateBotConfig(botId: string, updates: Partial<BotConfig>): Promise<void> {
+    const bot = this.bots.get(botId);
+    if (!bot) {
+      throw new Error(`Bot ${botId} not found or not running`);
+    }
+    await bot.updateConfig(updates);
+  }
+
   getActiveBot(botId: string): BotEngine | undefined {
     return this.bots.get(botId);
   }
