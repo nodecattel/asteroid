@@ -5,10 +5,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, Play, Pause, Square, Trash2 } from "lucide-react";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { AVAILABLE_MARKETS } from "@shared/schema";
+import { Badge } from "@/components/ui/badge";
 
 interface BotSelectorProps {
   bots: any[];
@@ -19,6 +19,22 @@ interface BotSelectorProps {
 export default function BotSelector({ bots, selectedBotId, onSelectBot }: BotSelectorProps) {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const { toast } = useToast();
+
+  // Fetch available markets from exchange info
+  const { data: marketsData } = useQuery<{ success: boolean; data: Array<{
+    symbol: string;
+    baseAsset: string;
+    quoteAsset: string;
+    status: string;
+    maxLeverage?: number;
+    pricePrecision: number;
+    quantityPrecision: number;
+  }> }>({
+    queryKey: ['/api/markets'],
+    refetchInterval: 5 * 60 * 1000, // Refresh every 5 minutes
+  });
+
+  const availableMarkets = marketsData?.data || [];
 
   const [formData, setFormData] = useState({
     apiKey: '',
@@ -246,11 +262,15 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot }: BotSel
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {AVAILABLE_MARKETS.map((market) => (
-                      <SelectItem key={market} value={market}>
-                        {market}
-                      </SelectItem>
-                    ))}
+                    {availableMarkets.length === 0 ? (
+                      <SelectItem value="ETHUSDT">Loading markets...</SelectItem>
+                    ) : (
+                      availableMarkets.map((market) => (
+                        <SelectItem key={market.symbol} value={market.symbol}>
+                          {market.symbol}{market.maxLeverage ? ` (${market.maxLeverage}x)` : ''}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
               </div>

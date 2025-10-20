@@ -3,7 +3,9 @@ import { createServer, type Server } from "http";
 import { Server as SocketIOServer } from "socket.io";
 import { storage } from "./storage";
 import { botManager } from "./bot-manager";
-import { botConfigSchema, AVAILABLE_MARKETS } from "@shared/schema";
+import { botConfigSchema } from "@shared/schema";
+import { AsterdexClient } from "./asterdex-client";
+import { ExchangeInfoCache } from "./exchange-info-cache";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
@@ -15,6 +17,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       methods: ["GET", "POST"]
     }
   });
+
+  // Initialize exchange info cache with a temporary client (no auth needed for public endpoints)
+  const tempClient = new AsterdexClient('', '');
+  const exchangeInfoCache = new ExchangeInfoCache(tempClient);
 
   // Forward bot events to connected clients
   botManager.on('orderPlaced', (data) => {
@@ -40,12 +46,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // API Routes
 
-  // Get available markets
+  // Get available markets from exchange info
   app.get('/api/markets', async (req, res) => {
-    res.json({
-      success: true,
-      data: AVAILABLE_MARKETS
-    });
+    try {
+      const markets = await exchangeInfoCache.getAvailableMarkets();
+      res.json({
+        success: true,
+        data: markets
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
   });
 
   // Get all bot instances

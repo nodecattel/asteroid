@@ -124,21 +124,9 @@ export const marketInfoSchema = z.object({
 
 export type MarketInfo = z.infer<typeof marketInfoSchema>;
 
-// Available Markets constant
-export const AVAILABLE_MARKETS = [
-  "BTCUSDT",
-  "ETHUSDT", 
-  "SOLUSDT",
-  "DOGEUSDT",
-  "HYPEUSDT",
-  "ASTERUSDT",
-  "WLDUSDT",
-  "XPLUSDT",
-  "LINKUSDT",
-  "AVAXUSDT"
-] as const;
-
-export type MarketSymbol = typeof AVAILABLE_MARKETS[number];
+// Note: Markets are now fetched dynamically from Asterdex exchange info endpoint
+// and cached for 5 minutes. This provides up-to-date market data including
+// leverage limits, precision, and other trading parameters.
 
 // Keep existing user schemas for auth if needed later
 export const userSchema = z.object({
