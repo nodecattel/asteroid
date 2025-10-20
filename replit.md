@@ -16,6 +16,9 @@ The Asterdex Volume Generator Bot is a comprehensive trading application designe
 - 🐛 **Critical Order ID Fix**: Fixed "Client order id is not valid" error by generating compliant IDs (<36 chars, valid pattern)
 - ✅ **Comprehensive Logging**: Added detailed server logs to track order placement, fills, position updates, and API responses
 - ✅ **Real Order Placement**: Bots now successfully place actual orders on Asterdex exchange with proper validation
+- 🐛 **Order Size Fix**: Changed default orderSizePercent from 0.1% to 25% for meaningful trade sizes
+- ✅ **Mobile Responsiveness**: Complete mobile optimization with responsive grids, typography, and spacing
+- ✅ **Footer Component**: Added NodeCattel branding (© 2025) with Asterdex referral link and GitHub link
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
