@@ -161,8 +161,8 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot }: BotSel
     },
   });
 
-  const selectedBotData = bots.find(b => b.instance?.id === selectedBotId);
-  const selectedBotStatus = selectedBotData?.instance?.status;
+  const selectedBotData = bots.find((b: any) => b.id === selectedBotId);
+  const selectedBotStatus = selectedBotData?.status;
 
   return (
     <div className="flex items-center gap-3 flex-wrap">
@@ -172,9 +172,9 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot }: BotSel
             <SelectValue placeholder="Select a bot" />
           </SelectTrigger>
           <SelectContent>
-            {bots.filter(bot => bot.instance?.id).map((bot) => (
-              <SelectItem key={bot.instance.id} value={bot.instance.id}>
-                {bot.instance.marketSymbol} - {bot.instance.status}
+            {bots.filter((bot: any) => bot.id).map((bot: any) => (
+              <SelectItem key={bot.id} value={bot.id}>
+                {bot.marketSymbol} - {bot.status}
               </SelectItem>
             ))}
           </SelectContent>

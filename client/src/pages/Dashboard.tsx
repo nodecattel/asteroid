@@ -24,12 +24,12 @@ export default function Dashboard() {
   });
 
   const bots = botsData?.data || [];
-  const selectedBot = bots.find((b: any) => b.instance?.id === selectedBotId);
+  const selectedBot = bots.find((b: any) => b.id === selectedBotId);
 
   // Auto-select first bot if none selected
   useEffect(() => {
-    if (!selectedBotId && bots.length > 0 && bots[0]?.instance?.id) {
-      setSelectedBotId(bots[0].instance.id);
+    if (!selectedBotId && bots.length > 0 && bots[0]?.id) {
+      setSelectedBotId(bots[0].id);
     }
   }, [bots, selectedBotId]);
 
@@ -75,7 +75,7 @@ export default function Dashboard() {
     if (!selectedBot) return;
 
     const updateTime = () => {
-      const start = new Date(selectedBot.instance.sessionStart);
+      const start = new Date(selectedBot.sessionStart);
       const now = new Date();
       const diff = Math.floor((now.getTime() - start.getTime()) / 1000);
       
@@ -107,7 +107,7 @@ export default function Dashboard() {
     sessionUptime: 0,
   };
 
-  const instance: BotInstance | undefined = selectedBot?.instance;
+  const instance: BotInstance | undefined = selectedBot;
   const orders: Order[] = (details?.data?.orders || []).map((o: any) => ({
     id: o.id,
     time: new Date(o.createdAt).toLocaleTimeString(),
@@ -130,17 +130,17 @@ export default function Dashboard() {
     target: hv.target,
   }));
 
-  const config = instance ? [
-    { label: "Market", value: instance.config.marketSymbol, category: "Trading" },
-    { label: "Leverage", value: `${instance.config.leverage}x`, category: "Trading" },
-    { label: "Investment", value: `$${instance.config.investmentUsdt.toFixed(2)}`, category: "Trading" },
-    { label: "Target Volume", value: `$${instance.config.targetVolume.toLocaleString()}`, category: "Targets" },
-    { label: "Target Hours", value: `${instance.config.targetHours}h`, category: "Targets" },
-    { label: "Max Loss", value: `$${instance.config.maxLoss.toFixed(2)}`, category: "Targets" },
-    { label: "Spread", value: `${instance.config.spreadBps} bps`, category: "Strategy" },
-    { label: "Orders Per Side", value: `${instance.config.ordersPerSide}`, category: "Strategy" },
-    { label: "Order Size", value: `${instance.config.orderSizePercent}%`, category: "Strategy" },
-    { label: "Refresh Interval", value: `${instance.config.refreshInterval}s`, category: "Strategy" },
+  const config = selectedBot ? [
+    { label: "Market", value: selectedBot.config.marketSymbol, category: "Trading" },
+    { label: "Leverage", value: `${selectedBot.config.leverage}x`, category: "Trading" },
+    { label: "Investment", value: `$${selectedBot.config.investmentUsdt.toFixed(2)}`, category: "Trading" },
+    { label: "Target Volume", value: `$${selectedBot.config.targetVolume.toLocaleString()}`, category: "Targets" },
+    { label: "Target Hours", value: `${selectedBot.config.targetHours}h`, category: "Targets" },
+    { label: "Max Loss", value: `$${selectedBot.config.maxLoss.toFixed(2)}`, category: "Targets" },
+    { label: "Spread", value: `${selectedBot.config.spreadBps} bps`, category: "Strategy" },
+    { label: "Orders Per Side", value: `${selectedBot.config.ordersPerSide}`, category: "Strategy" },
+    { label: "Order Size", value: `${selectedBot.config.orderSizePercent}%`, category: "Strategy" },
+    { label: "Refresh Interval", value: `${selectedBot.config.refreshInterval}s`, category: "Strategy" },
   ] : [];
 
   const handleCancelOrder = async (orderId: string) => {
@@ -148,8 +148,8 @@ export default function Dashboard() {
     // TODO: Implement order cancellation
   };
 
-  const targetProgress = instance
-    ? (stats.totalVolume / instance.config.targetVolume) * 100
+  const targetProgress = selectedBot
+    ? (stats.totalVolume / selectedBot.config.targetVolume) * 100
     : 0;
 
   const hourlyRate = stats.sessionUptime > 0
@@ -159,8 +159,8 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-background">
       <StatusBar
-        botStatus={instance?.status || "stopped"}
-        market={instance?.marketSymbol || "N/A"}
+        botStatus={selectedBot?.status || "stopped"}
+        market={selectedBot?.marketSymbol || "N/A"}
         sessionTime={sessionTime}
         connectionStatus="connected"
         onPauseResume={() => {}}
