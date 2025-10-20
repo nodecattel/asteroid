@@ -1,52 +1,62 @@
 # Asterdex Volume Generator Bot
 
 ## Overview
-The Asterdex Volume Generator Bot is a fully functional trading bot designed for the Asterdex cryptocurrency exchange, focused on generating trading volume. It leverages 100% of the Asterdex API, allowing users to run multiple bot instances concurrently across different market pairs. The system includes a terminal-inspired, monochrome dashboard for real-time monitoring of bot activities, metrics, hourly volume progress, and managing configurations. Its core purpose is to automate trading strategies and provide comprehensive insights into market data, risk analytics, and performance.
+The Asterdex Volume Generator Bot is a comprehensive trading application designed for the Asterdex cryptocurrency exchange. Its primary purpose is to generate trading volume through automated strategies, leveraging 100% of the Asterdex API. The system supports running multiple bot instances simultaneously, each managing a specific market pair. It features a real-time, terminal-inspired monochrome dashboard for monitoring bot activities, tracking key metrics, managing configurations, and accessing advanced market and performance data. The project aims to provide a robust, efficient, and user-friendly platform for automated volume generation, capable of dynamic market loading and Docker-based deployment.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
 ## System Architecture
 
-### Frontend Architecture
-The frontend is built with React and TypeScript using Vite, featuring a custom terminal-inspired UI designed with shadcn/ui and Radix UI primitives, adhering to a monochrome aesthetic with the JetBrains Mono font. State management is handled by TanStack Query for server state and local React state for UI interactions, complemented by WebSocket integration for real-time updates. Styling is managed with Tailwind CSS, using a dark mode primary palette with strategic accent colors for status indications.
+### UI/UX Decisions
+The frontend is built with React and TypeScript using Vite, featuring a custom terminal-inspired design. It utilizes `shadcn/ui` components with Radix UI primitives, adhering to a monochrome aesthetic with the JetBrains Mono font. Tailwind CSS is used for styling, with a custom color palette emphasizing dark mode and strategic accent colors (green for positive, red for negative). Key components include `StatusBar`, `MetricCard`, `OrdersTable`, `ActivityFeed`, `VolumeChart`, `BotSelector`, and `ConfigPanel`.
 
-### Backend Architecture
-The backend uses Node.js with an Express.js server, implementing RESTful endpoints and WebSocket (Socket.IO) for real-time communication. The core `Bot Engine` manages individual bot instances, handling advanced trading logic, market data intelligence, batch order placement, real-time order tracking, and risk monitoring. A singleton `Bot Manager` orchestrates multiple bot instances. The `Asterdex API Client` provides 100% API coverage (60+ methods), handling HMAC SHA256 authentication, rate limiting, and request queuing. A `User Data Stream Manager` maintains WebSocket connections to Asterdex for real-time order, account, and position updates.
+### Technical Implementations
+**Frontend**:
+- **Framework**: React with TypeScript, Vite.
+- **State Management**: TanStack Query for server state/API caching, local React state for UI.
+- **Real-time**: WebSocket integration via Socket.IO.
+- **Routing**: Wouter.
+- **Dynamic Market Selection**: Markets are auto-fetched from Asterdex every 5 minutes, cached, and display leverage information.
 
-### Trading Strategy
-The bot employs a market-making approach using mark price for accurate order placement, configurable spread, and multiple orders per side. It utilizes batch order placement for efficiency, automatic order refreshing, and smart cancellation of stale orders. Real-time order tracking via WebSocket ensures instant fill notifications and accurate P&L/volume tracking. Risk management includes ADL quantile monitoring, position risk tracking, leverage bracket awareness, and margin call event handling.
+**Backend**:
+- **Runtime**: Node.js with Express.js.
+- **API Design**: RESTful for bot management, complemented by Socket.IO for real-time communication.
+- **Core Bot Engine**: Manages individual bot instances, handles advanced trading logic, market data intelligence, batch order placement, real-time order tracking, risk monitoring, and performance analytics. Uses mark price for order placement and intelligent order management (refreshing/cancelling stale orders).
+- **Bot Manager**: A singleton orchestrator for multiple bot instances, coordinating lifecycle and broadcasting WebSocket events.
+- **Asterdex API Client**: Provides complete API coverage (60+ methods) with HMAC SHA256 authentication, rate limit protection (weight and order count), and automatic backoff.
+- **User Data Stream Manager**: Manages WebSocket connection to Asterdex for real-time order, account, and position updates, including automatic reconnection and listen key keepalive.
+- **Exchange Info Cache**: Caches Asterdex exchange information for 5 minutes, providing market data and filtering for active trading pairs.
 
-### Data Storage
-The current implementation uses in-memory storage (`MemStorage`) for development, with a schema defined for PostgreSQL via Drizzle ORM, allowing for easy transition to persistent storage. Data models include `BotInstance`, `BotStats`, `Order`, `ActivityLog`, and `HourlyVolume`, with Zod schemas for validation.
+### Feature Specifications
+- **Dynamic Market System**: Auto-discovers and caches markets from Asterdex, providing rich data like leverage limits and trading status.
+- **100% Asterdex API Utilization**: Full coverage of 60+ API methods, including advanced orders (batch, stop/take-profit, trailing stops), risk management, market intelligence, and account analytics.
+- **Intelligent Trading**: Mark price-based order placement, batch order processing, real-time order fill tracking via WebSocket, commission-aware P&L calculation, and automatic risk monitoring.
+- **Multi-Bot Management**: Supports running and monitoring multiple independent bot instances on different market pairs.
+- **Rate Limit Protection**: Implements request weight tracking, order count limits, automatic backoff, and request queuing.
+
+### System Design Choices
+- **Data Storage**: In-memory storage for development, with optional PostgreSQL using Drizzle ORM for production (configured via Docker Compose). Zod schemas ensure data integrity.
+- **Deployment**: Docker-based deployment is recommended for production using Docker Compose. An interactive setup wizard (`asteroid.sh`) simplifies prerequisite checks, environment configuration, and service management. Replit deployment is supported for development/testing.
+- **Robustness**: Type safety with TypeScript, comprehensive error handling, and performance optimizations (batch operations, WebSockets, smart caching).
 
 ## External Dependencies
 
-### Asterdex Exchange API
-- **Base URL**: `https://fapi.asterdex.com`
-- **WebSocket URL**: `wss://fstream.asterdex.com`
-- **Authentication**: API Key + HMAC SHA256 signed requests
-- **Endpoints**: Covers `/fapi/v1/*`, `/fapi/v2/*`, `/fapi/v4/*` for comprehensive market data, trading, account, and exchange info.
-- **Rate Limits**: Enforces request weight and order count limits.
-- **User Data Stream**: WebSocket connection for real-time order, account, and position updates.
-
-### Real-time Communication
-- **Socket.IO**: Used for WebSocket communication between the server and frontend clients.
-- **Asterdex WebSocket**: Native user data stream for real-time updates from the exchange.
-
-### Third-party Services
-- **Axios**: HTTP client for Asterdex API requests.
-- **WS (ws)**: Library for WebSocket connections to Asterdex.
-- **Neon Database (PostgreSQL)**: Configured for potential future use, currently using in-memory storage.
-
-### Key Dependencies
-- **Frontend**: React, React DOM, TanStack Query, Radix UI, Recharts, React Hook Form, Zod.
-- **Backend**: Express, Socket.IO, ws.
-- **Database**: Drizzle ORM, @neondatabase/serverless.
-- **Build Tools**: Vite, esbuild, TypeScript.
-
-### Environment Variables
-- `API_KEY`: Asterdex API key.
-- `API_SECRET`: Asterdex API secret.
-- `DATABASE_URL`: PostgreSQL connection string (optional).
-- Bot configuration parameters.
+- **Asterdex Exchange API**:
+    - Base URL: `https://fapi.asterdex.com`
+    - WebSocket URL: `wss://fstream.asterdex.com`
+    - Authentication: API Key + HMAC SHA256 signed requests.
+    - Endpoints: `/fapi/v1/*`, `/fapi/v2/*`, `/fapi/v4/*` for trading, market data, and exchange info.
+    - Features: User Data Stream (WebSocket), Exchange Info.
+- **Real-time Communication**:
+    - Socket.IO: For WebSocket communication between the server and clients.
+    - `ws` library: For native WebSocket connections to Asterdex.
+- **Third-party Services**:
+    - Axios: For HTTP requests to the Asterdex API.
+    - Neon Database: Optional PostgreSQL serverless database, configured via Docker Compose.
+- **Key Libraries/Frameworks**:
+    - **Frontend**: React, React DOM, TanStack Query, Radix UI, Recharts, React Hook Form, Zod.
+    - **Backend**: Express, Socket.IO, `ws`.
+    - **Database**: Drizzle ORM, `@neondatabase/serverless` (for Neon).
+    - **Build Tools**: Vite, esbuild, TypeScript.
+    - **Deployment**: Docker, Docker Compose.
