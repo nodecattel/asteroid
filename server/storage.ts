@@ -26,7 +26,9 @@ export interface IStorage {
   createOrder(order: Omit<Order, 'id'>): Promise<Order>;
   getOrder(id: string): Promise<Order | undefined>;
   getOrdersByBot(botId: string): Promise<Order[]>;
+  getOrders(botId: string): Promise<Order[]>;
   updateOrder(id: string, updates: Partial<Order>): Promise<Order>;
+  updateOrderByClientId(clientOrderId: string, updates: Partial<Order>): Promise<Order | undefined>;
   deleteOrder(id: string): Promise<void>;
   
   // Activity Logs
@@ -35,6 +37,7 @@ export interface IStorage {
   
   // Hourly Volume
   addHourlyVolume(data: HourlyVolume): Promise<void>;
+  updateHourlyVolume(botId: string, hour: string, volume: number): Promise<void>;
   getHourlyVolume(botId: string): Promise<HourlyVolume[]>;
 }
 
@@ -140,12 +143,25 @@ export class MemStorage implements IStorage {
     return Array.from(this.orders.values()).filter(order => order.botId === botId);
   }
 
+  async getOrders(botId: string): Promise<Order[]> {
+    return this.getOrdersByBot(botId);
+  }
+
   async updateOrder(id: string, updates: Partial<Order>): Promise<Order> {
     const order = this.orders.get(id);
     if (!order) throw new Error(`Order ${id} not found`);
     
     const updated = { ...order, ...updates, updatedAt: new Date().toISOString() };
     this.orders.set(id, updated);
+    return updated;
+  }
+
+  async updateOrderByClientId(clientOrderId: string, updates: Partial<Order>): Promise<Order | undefined> {
+    const order = Array.from(this.orders.values()).find(o => o.clientOrderId === clientOrderId);
+    if (!order) return undefined;
+    
+    const updated = { ...order, ...updates, updatedAt: new Date().toISOString() };
+    this.orders.set(order.id, updated);
     return updated;
   }
 
@@ -175,6 +191,25 @@ export class MemStorage implements IStorage {
     const volumes = this.hourlyVolume.get(data.botId) || [];
     volumes.push(data);
     this.hourlyVolume.set(data.botId, volumes);
+  }
+
+  async updateHourlyVolume(botId: string, hour: string, volume: number): Promise<void> {
+    const volumes = this.hourlyVolume.get(botId) || [];
+    const existing = volumes.find(v => v.hour === hour);
+    
+    if (existing) {
+      existing.volume = volume;
+    } else {
+      volumes.push({
+        botId,
+        hour,
+        volume,
+        target: 0,
+        trades: 0,
+      });
+    }
+    
+    this.hourlyVolume.set(botId, volumes);
   }
 
   async getHourlyVolume(botId: string): Promise<HourlyVolume[]> {

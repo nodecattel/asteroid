@@ -72,7 +72,8 @@ export const orderSchema = z.object({
   type: z.enum(['LIMIT', 'MARKET']),
   price: z.number(),
   quantity: z.number(),
-  status: z.enum(['NEW', 'PARTIALLY_FILLED', 'FILLED', 'CANCELED', 'REJECTED', 'EXPIRED']),
+  filledQuantity: z.number().optional(),
+  status: z.enum(['PENDING', 'NEW', 'PARTIALLY_FILLED', 'FILLED', 'CANCELED', 'REJECTED', 'EXPIRED', 'FAILED']),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
@@ -84,7 +85,7 @@ export const activityLogSchema = z.object({
   id: z.string(),
   botId: z.string(),
   timestamp: z.string().datetime(),
-  type: z.enum(['fill', 'error', 'info', 'cancel']),
+  type: z.enum(['fill', 'error', 'info', 'cancel', 'warning', 'success']),
   message: z.string(),
 });
 
