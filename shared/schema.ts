@@ -20,6 +20,8 @@ export const botConfigSchema = z.object({
   ordersPerSide: z.number().int().positive(),
   orderSizePercent: z.number().positive(),
   refreshInterval: z.number().positive(),
+  tradingBias: z.enum(['neutral', 'long', 'short']).default('neutral'), // Side preference
+  longBiasPercent: z.number().min(0).max(100).default(50), // % of orders on long side (50 = neutral)
   
   // Rate Limit Protection
   delayBetweenOrders: z.number().nonnegative(),

@@ -63,12 +63,30 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot }: BotSel
     ordersPerSide: 10,
     orderSizePercent: 0.1,
     refreshInterval: 2.0,
+    tradingBias: 'neutral' as 'neutral' | 'long' | 'short',
+    longBiasPercent: 50,
     delayBetweenOrders: 0.05,
     delayAfterCancel: 0.3,
     maxOrdersToPlace: 10,
     usePostOnly: false,
     tradingFeePercent: 0.2,
+    // Risk Management
+    enableStopLoss: true,
+    stopLossPercent: 2.0,
+    enableTakeProfit: true,
+    takeProfitPercent: 5.0,
+    enableTrailingStop: false,
+    trailingStopCallbackRate: 1.0,
+    trailingStopActivationPercent: 2.0,
+    circuitBreakerEnabled: true,
+    circuitBreakerThreshold: 20.0,
+    earlyWarningThreshold50: true,
+    earlyWarningThreshold75: true,
   });
+
+  // Get selected market info for max leverage
+  const selectedMarket = availableMarkets.find(m => m.symbol === formData.marketSymbol);
+  const maxLeverage = selectedMarket?.maxLeverage || 125;
 
   const createBotMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -326,25 +344,33 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot }: BotSel
                 <CardContent>
                   <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Label htmlFor="leverage">Leverage</Label>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Info className="w-4 h-4 text-muted-foreground cursor-help" />
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-xs">
-                            <p>Leverage multiplier for your positions. Higher leverage = higher risk. Check market's max leverage limit.</p>
-                          </TooltipContent>
-                        </Tooltip>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor="leverage">Leverage</Label>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="w-4 h-4 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p>Leverage multiplier for your positions. Higher leverage = higher risk. Current market max: {maxLeverage}x</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <Badge variant="secondary" className="text-xs">
+                          Max {maxLeverage}x
+                        </Badge>
                       </div>
                       <Input
                         id="leverage"
                         data-testid="input-leverage"
                         type="number"
                         min="1"
-                        max="125"
+                        max={maxLeverage}
                         value={formData.leverage}
-                        onChange={(e) => setFormData({ ...formData, leverage: Number(e.target.value) })}
+                        onChange={(e) => {
+                          const val = Math.min(Number(e.target.value), maxLeverage);
+                          setFormData({ ...formData, leverage: val });
+                        }}
                         className="text-base h-11"
                       />
                     </div>
@@ -467,76 +493,335 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot }: BotSel
                   <CardDescription>Fine-tune order placement and trading behavior</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Label htmlFor="spreadBps">Spread (bps)</Label>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Info className="w-4 h-4 text-muted-foreground cursor-help" />
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-xs">
-                            <p>Order spread in basis points (1 bps = 0.01%). Lower = tighter around market price</p>
-                          </TooltipContent>
-                        </Tooltip>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor="spreadBps">Spread (bps)</Label>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="w-4 h-4 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p>Order spread in basis points (1 bps = 0.01%). Lower = tighter around market price</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <Input
+                          id="spreadBps"
+                          data-testid="input-spread"
+                          type="number"
+                          step="0.1"
+                          min="0.1"
+                          value={formData.spreadBps}
+                          onChange={(e) => setFormData({ ...formData, spreadBps: Number(e.target.value) })}
+                          className="h-11"
+                        />
                       </div>
-                      <Input
-                        id="spreadBps"
-                        data-testid="input-spread"
-                        type="number"
-                        step="0.1"
-                        min="0.1"
-                        value={formData.spreadBps}
-                        onChange={(e) => setFormData({ ...formData, spreadBps: Number(e.target.value) })}
-                        className="h-11"
-                      />
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor="ordersPerSide">Orders/Side</Label>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="w-4 h-4 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p>Number of buy and sell orders to place simultaneously. More orders = better coverage</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <Input
+                          id="ordersPerSide"
+                          data-testid="input-orders-per-side"
+                          type="number"
+                          min="1"
+                          max="20"
+                          value={formData.ordersPerSide}
+                          onChange={(e) => setFormData({ ...formData, ordersPerSide: Number(e.target.value) })}
+                          className="h-11"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor="orderSize">Order Size (%)</Label>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="w-4 h-4 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p>Percentage of effective capital per order (Effective Capital = Investment × Leverage)</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <Input
+                          id="orderSize"
+                          data-testid="input-order-size"
+                          type="number"
+                          step="0.01"
+                          min="0.01"
+                          max="100"
+                          value={formData.orderSizePercent}
+                          onChange={(e) => setFormData({ ...formData, orderSizePercent: Number(e.target.value) })}
+                          className="h-11"
+                        />
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Label htmlFor="ordersPerSide">Orders/Side</Label>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Info className="w-4 h-4 text-muted-foreground cursor-help" />
-                          </TooltipTrigger>
-                          <TooltipContent className="max-w-xs">
-                            <p>Number of buy and sell orders to place simultaneously. More orders = better coverage</p>
-                          </TooltipContent>
-                        </Tooltip>
+
+                    <Separator className="my-4" />
+
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor="tradingBias">Trading Bias</Label>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="w-4 h-4 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p>Preferred trading direction. Neutral = equal buy/sell orders. Long = favor buy side. Short = favor sell side.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <Select
+                          value={formData.tradingBias}
+                          onValueChange={(value: 'neutral' | 'long' | 'short') => {
+                            const longPercent = value === 'long' ? 70 : value === 'short' ? 30 : 50;
+                            setFormData({ ...formData, tradingBias: value, longBiasPercent: longPercent });
+                          }}
+                        >
+                          <SelectTrigger data-testid="select-trading-bias" className="h-11">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="neutral">Neutral (50/50)</SelectItem>
+                            <SelectItem value="long">Long Bias (70/30)</SelectItem>
+                            <SelectItem value="short">Short Bias (30/70)</SelectItem>
+                          </SelectContent>
+                        </Select>
                       </div>
-                      <Input
-                        id="ordersPerSide"
-                        data-testid="input-orders-per-side"
-                        type="number"
-                        min="1"
-                        max="20"
-                        value={formData.ordersPerSide}
-                        onChange={(e) => setFormData({ ...formData, ordersPerSide: Number(e.target.value) })}
-                        className="h-11"
-                      />
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor="longBiasPercent">Long Allocation (%)</Label>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="w-4 h-4 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p>Percentage of orders on buy side. 50% = neutral, 70% = long bias, 30% = short bias</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <Input
+                          id="longBiasPercent"
+                          data-testid="input-long-bias"
+                          type="number"
+                          min="0"
+                          max="100"
+                          value={formData.longBiasPercent}
+                          onChange={(e) => setFormData({ ...formData, longBiasPercent: Number(e.target.value) })}
+                          className="h-11"
+                        />
+                      </div>
                     </div>
-                    <div className="space-y-2">
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Risk Management */}
+              <Card className="border-orange-500/20">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2">
+                    <Target className="w-5 h-5 text-orange-500" />
+                    <CardTitle className="text-lg">Risk Management</CardTitle>
+                  </div>
+                  <CardDescription>Configure stop-loss, take-profit, trailing stops, and emergency protection</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {/* Stop-Loss & Take-Profit */}
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor="stopLossPercent">Stop-Loss (%)</Label>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="w-4 h-4 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p>Maximum loss percentage from entry price. Native STOP_MARKET order will be placed automatically. Layer 2 manual fallback included.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <Input
+                          id="stopLossPercent"
+                          data-testid="input-stop-loss"
+                          type="number"
+                          step="0.1"
+                          min="0.1"
+                          max="100"
+                          value={formData.stopLossPercent}
+                          onChange={(e) => setFormData({ ...formData, stopLossPercent: Number(e.target.value) })}
+                          className="h-11"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor="takeProfitPercent">Take-Profit (%)</Label>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="w-4 h-4 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p>Target profit percentage from entry price. Native TAKE_PROFIT_MARKET order will be placed automatically. Layer 2 manual fallback included.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <Input
+                          id="takeProfitPercent"
+                          data-testid="input-take-profit"
+                          type="number"
+                          step="0.1"
+                          min="0.1"
+                          max="1000"
+                          value={formData.takeProfitPercent}
+                          onChange={(e) => setFormData({ ...formData, takeProfitPercent: Number(e.target.value) })}
+                          className="h-11"
+                        />
+                      </div>
+                    </div>
+
+                    <Separator className="my-3" />
+
+                    {/* Trailing Stop */}
+                    <div className="space-y-3">
                       <div className="flex items-center gap-2">
-                        <Label htmlFor="orderSize">Order Size (%)</Label>
+                        <Label>Trailing Stop-Loss</Label>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Info className="w-4 h-4 text-muted-foreground cursor-help" />
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs">
-                            <p>Percentage of effective capital per order (Effective Capital = Investment × Leverage)</p>
+                            <p>Automatically adjusts stop-loss as profit increases. Locks in profits while allowing upside. Uses native TRAILING_STOP_MARKET orders.</p>
                           </TooltipContent>
                         </Tooltip>
+                        <div className="ml-auto">
+                          <Button
+                            type="button"
+                            variant={formData.enableTrailingStop ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setFormData({ ...formData, enableTrailingStop: !formData.enableTrailingStop })}
+                            data-testid="toggle-trailing-stop"
+                          >
+                            {formData.enableTrailingStop ? 'Enabled' : 'Disabled'}
+                          </Button>
+                        </div>
                       </div>
-                      <Input
-                        id="orderSize"
-                        data-testid="input-order-size"
-                        type="number"
-                        step="0.01"
-                        min="0.01"
-                        max="100"
-                        value={formData.orderSizePercent}
-                        onChange={(e) => setFormData({ ...formData, orderSizePercent: Number(e.target.value) })}
-                        className="h-11"
-                      />
+                      {formData.enableTrailingStop && (
+                        <div className="grid grid-cols-2 gap-4 pl-6 border-l-2 border-orange-500/30">
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Label htmlFor="trailingStopActivation">Activation (%)</Label>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Info className="w-4 h-4 text-muted-foreground cursor-help" />
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <p>Profit threshold to activate trailing stop. e.g., 2% means trailing stop activates after 2% profit</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                            <Input
+                              id="trailingStopActivation"
+                              data-testid="input-trailing-activation"
+                              type="number"
+                              step="0.1"
+                              min="0.1"
+                              value={formData.trailingStopActivationPercent}
+                              onChange={(e) => setFormData({ ...formData, trailingStopActivationPercent: Number(e.target.value) })}
+                              className="h-11"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Label htmlFor="trailingStopCallback">Callback Rate (%)</Label>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Info className="w-4 h-4 text-muted-foreground cursor-help" />
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <p>Trailing distance percentage. e.g., 1% means stop-loss trails 1% below peak price</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                            <Input
+                              id="trailingStopCallback"
+                              data-testid="input-trailing-callback"
+                              type="number"
+                              step="0.1"
+                              min="0.1"
+                              max="10"
+                              value={formData.trailingStopCallbackRate}
+                              onChange={(e) => setFormData({ ...formData, trailingStopCallbackRate: Number(e.target.value) })}
+                              className="h-11"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <Separator className="my-3" />
+
+                    {/* Circuit Breaker */}
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Label>Emergency Circuit Breaker</Label>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="w-4 h-4 text-muted-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p>Automatic emergency shutdown. Closes all positions and pauses bot if total unrealized loss exceeds threshold.</p>
+                          </TooltipContent>
+                        </Tooltip>
+                        <div className="ml-auto">
+                          <Button
+                            type="button"
+                            variant={formData.circuitBreakerEnabled ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => setFormData({ ...formData, circuitBreakerEnabled: !formData.circuitBreakerEnabled })}
+                            data-testid="toggle-circuit-breaker"
+                          >
+                            {formData.circuitBreakerEnabled ? 'Enabled' : 'Disabled'}
+                          </Button>
+                        </div>
+                      </div>
+                      {formData.circuitBreakerEnabled && (
+                        <div className="pl-6 border-l-2 border-red-500/30">
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Label htmlFor="circuitBreakerThreshold">Max Loss Threshold (USDT)</Label>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Info className="w-4 h-4 text-muted-foreground cursor-help" />
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <p>Maximum total unrealized loss in USDT. If exceeded, bot closes all positions immediately and stops.</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </div>
+                            <Input
+                              id="circuitBreakerThreshold"
+                              data-testid="input-circuit-breaker"
+                              type="number"
+                              step="1"
+                              min="1"
+                              value={formData.circuitBreakerThreshold}
+                              onChange={(e) => setFormData({ ...formData, circuitBreakerThreshold: Number(e.target.value) })}
+                              className="h-11"
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardContent>
