@@ -1,0 +1,628 @@
+# Asterbot - Features Overview
+
+**A comprehensive automated trading bot for Asterdex perpetual futures with advanced risk management and real-time monitoring.**
+
+---
+
+## 🎯 Core Trading Features
+
+### 1. Automated Volume Generation
+Generate trading volume on Asterdex perpetual futures market automatically.
+
+**What It Does:**
+- Places buy and sell orders around the current market price
+- Continuously refreshes orders in cycles
+- Tracks total volume generated
+- Calculates hourly volume rates and 24-hour projections
+- Estimates trading fees and funding costs
+
+**Key Benefits:**
+- Hands-off trading automation
+- Consistent volume generation
+- Real-time volume tracking
+- Accurate cost projections
+
+---
+
+### 2. Position Management
+Complete control over opening and closing positions with real-time monitoring.
+
+**What It Does:**
+- Opens positions with configurable leverage
+- Closes positions manually or automatically
+- Tracks position entry price, current price, and PnL
+- Monitors margin usage per position
+- Supports both One-Way and Hedge position modes
+
+**Key Benefits:**
+- Flexible position control
+- Real-time PnL tracking
+- Margin safety
+- Multiple position modes
+
+---
+
+### 3. Order Management
+Sophisticated order placement and cancellation system.
+
+**What It Does:**
+- Places orders with automatic constraint validation
+- Cancels and refreshes orders on each cycle
+- Supports multiple order types (GTC, POST_ONLY, Market)
+- Tracks order history and execution
+- Implements rate limiting to prevent API throttling
+
+**Key Benefits:**
+- Reliable order execution
+- Constraint validation prevents errors
+- Rate limit protection
+- Order tracking and history
+
+---
+
+## 🛡️ Risk Management System
+
+### 1. Dual-Layer Stop-Loss Protection
+Guaranteed position closure when losses reach threshold.
+
+**Layer 1: Native Exchange Orders (Proactive)**
+- STOP orders placed on exchange immediately when position opens
+- Exchange monitors price in real-time
+- Automatic closure at exact stop-loss price
+- No timing gaps or slippage
+
+**Layer 2: Manual Fallback (Reactive)**
+- Checks every refresh cycle
+- Catches positions if native orders fail
+- Guaranteed position closure
+- Logs all stop-loss triggers
+
+**Key Benefits:**
+- Guaranteed loss protection
+- Dual-layer redundancy
+- No single point of failure
+- Exact stop-loss execution
+
+---
+
+### 2. Automated Take-Profit
+Lock in gains automatically when profit targets are reached.
+
+**Layer 1: Native Exchange Orders (Proactive)**
+- TAKE_PROFIT orders placed on exchange
+- Automatic closure at profit target
+- Locks in gains immediately
+
+**Layer 2: Manual Fallback (Reactive)**
+- Checks every refresh cycle
+- Catches positions if native orders fail
+- Ensures profit realization
+
+**Key Benefits:**
+- Automatic profit locking
+- Dual-layer redundancy
+- Consistent profit taking
+- Hands-off profit management
+
+---
+
+### 3. Trailing Stop-Loss
+Lock in gains while allowing upside potential.
+
+**How It Works:**
+- Activates when position reaches profit threshold
+- Records peak profit level
+- Trails behind peak by configured distance
+- Closes position if price drops below trailing level
+
+**Key Benefits:**
+- Protects profits
+- Allows upside capture
+- Dynamic stop-loss adjustment
+- Maximizes winning trades
+
+---
+
+### 4. Emergency Circuit Breaker
+Prevents catastrophic account losses.
+
+**How It Works:**
+- Monitors total account unrealized PnL
+- Triggers if total loss exceeds threshold
+- Immediately closes ALL open positions
+- Includes cooldown to prevent repeated triggers
+
+**Key Benefits:**
+- Account-level protection
+- Prevents liquidation
+- Emergency stop mechanism
+- Peace of mind
+
+---
+
+### 5. Position Health Monitoring
+Real-time warnings when positions approach danger zones.
+
+**How It Works:**
+- Monitors all open positions every cycle
+- Logs warnings at 50% of stop-loss threshold
+- Logs critical alerts at 75% of stop-loss threshold
+- Provides early warning system
+
+**Key Benefits:**
+- Early warning system
+- Visibility into position risk
+- Proactive risk management
+- Detailed logging
+
+---
+
+## 📊 Market Intelligence
+
+### 1. BTC/ETH Direction Alignment
+Filter orders based on market correlation and agreement.
+
+**How It Works:**
+- Fetches BTC and ETH price data
+- Calculates rolling correlation between assets
+- Checks if both moving in same direction
+- Only places orders if criteria met
+
+**Key Benefits:**
+- Avoid trading against market bias
+- Correlation-based filtering
+- Market-aware trading
+- Improved win rate
+
+---
+
+### 2. Exchange Info Caching
+Automatic constraint caching with intelligent refresh.
+
+**How It Works:**
+- Fetches exchange constraints on startup
+- Caches for configurable TTL
+- Automatically refreshes after expiration
+- Reduces API calls significantly
+
+**Key Benefits:**
+- Reduced API calls
+- Faster order placement
+- Lower latency
+- Better performance
+
+---
+
+### 3. Constraint Validation
+Validates all orders before placement.
+
+**What It Validates:**
+- Price within min/max range
+- Quantity within min/max range
+- Order value within notional limits
+- Leverage within allowed range
+
+**Key Benefits:**
+- Prevents exchange errors
+- Improves success rate
+- Automatic constraint checking
+- Error prevention
+
+---
+
+## 📈 Monitoring & Analytics
+
+### 1. Real-Time Dashboard
+Live monitoring of bot status and trading metrics.
+
+**Displays:**
+- Account summary (balance, margin, PnL)
+- Trading metrics (volume, fees, rate)
+- Open positions with details
+- Risk indicators and warnings
+- Trading pairs information
+
+**Key Benefits:**
+- Real-time visibility
+- Professional interface
+- Comprehensive metrics
+- Easy monitoring
+
+---
+
+### 2. WebSocket Real-Time Updates
+Live account and position updates from exchange.
+
+**Updates:**
+- Account balance changes
+- Position updates
+- Order updates
+- Real-time PnL changes
+
+**Key Benefits:**
+- Real-time data
+- Reduced latency
+- Live notifications
+- Instant updates
+
+---
+
+### 3. Comprehensive Logging
+Detailed logging of all bot operations.
+
+**Logs:**
+- Order placement and cancellation
+- Position opening and closing
+- Stop-loss and take-profit triggers
+- Error events and recovery
+- Performance metrics
+
+**Key Benefits:**
+- Complete audit trail
+- Debugging capability
+- Performance analysis
+- Historical tracking
+
+---
+
+### 4. API Endpoints
+RESTful API for bot control and monitoring.
+
+**Endpoints:**
+- Status and metrics
+- Position management
+- Market data
+- Cache status
+- Bot control (start/stop/restart)
+
+**Key Benefits:**
+- Programmatic control
+- Integration capability
+- Remote monitoring
+- Automation support
+
+---
+
+## 🔧 Advanced Features
+
+### 1. Volume Randomization
+Natural-looking trading patterns.
+
+**What It Does:**
+- Randomizes order sizes (configurable range)
+- Randomizes order timing (configurable variance)
+- Creates natural trading patterns
+- Avoids detection as bot
+
+**Key Benefits:**
+- Natural trading appearance
+- Reduced market impact
+- Improved execution
+- Less detectable
+
+---
+
+### 2. Position Mode Support
+Flexible position management strategies.
+
+**Modes:**
+- **One-Way Mode:** Single position per symbol
+- **Hedge Mode:** Separate LONG and SHORT positions
+
+**Key Benefits:**
+- Flexible strategies
+- Multiple position modes
+- Directional flexibility
+- Strategy options
+
+---
+
+### 3. Rate Limit Protection
+Built-in protection against API rate limits.
+
+**What It Does:**
+- Implements delays between orders
+- Delays after cancellation
+- Limits orders per cycle
+- Automatic retry on rate limit
+
+**Key Benefits:**
+- Prevents rate limit errors
+- Reliable operation
+- Automatic recovery
+- Consistent performance
+
+---
+
+### 4. Fee Tracking
+Comprehensive fee monitoring and analysis.
+
+**Tracks:**
+- Maker fees
+- Taker fees
+- Funding costs
+- Total fees vs. budget
+- Fee percentage
+
+**Key Benefits:**
+- Cost visibility
+- Budget tracking
+- Profitability analysis
+- Cost optimization
+
+---
+
+### 5. Error Handling & Recovery
+Robust error handling and automatic recovery.
+
+**Features:**
+- Automatic retry on failure
+- Graceful degradation
+- Detailed error logging
+- Recovery mechanisms
+
+**Key Benefits:**
+- Reliable operation
+- Automatic recovery
+- Detailed diagnostics
+- Minimal downtime
+
+---
+
+## 🎮 Control & Automation
+
+### 1. Bot Control
+Start, stop, and restart bot operations.
+
+**Operations:**
+- Start bot trading
+- Stop bot gracefully
+- Restart bot
+- Status monitoring
+
+**Key Benefits:**
+- Full control
+- Graceful shutdown
+- Easy management
+- Status visibility
+
+---
+
+### 2. Position Closure
+Manual position closure with confirmation.
+
+**Features:**
+- Close specific positions
+- Confirmation dialogs
+- Immediate execution
+- PnL calculation
+
+**Key Benefits:**
+- Manual override
+- Safety confirmation
+- Immediate action
+- Clear feedback
+
+---
+
+### 3. Configuration Management
+Flexible configuration system.
+
+**Features:**
+- Environment variable configuration
+- Docker Compose integration
+- Configuration profiles
+- Runtime updates
+
+**Key Benefits:**
+- Easy configuration
+- Multiple profiles
+- Flexible deployment
+- Easy updates
+
+---
+
+## 📱 User Interface
+
+### 1. Web Dashboard
+Professional trading terminal interface.
+
+**Features:**
+- Real-time data display
+- Position management controls
+- Risk indicators
+- Trading metrics
+- Activity logs
+
+**Key Benefits:**
+- Professional appearance
+- Easy monitoring
+- Intuitive controls
+- Comprehensive view
+
+---
+
+### 2. Terminal Output
+Detailed console logging.
+
+**Shows:**
+- Configuration summary
+- Trading cycles
+- Order placement
+- Position updates
+- Performance metrics
+
+**Key Benefits:**
+- Real-time feedback
+- Detailed information
+- Easy debugging
+- Performance visibility
+
+---
+
+## 🔐 Security Features
+
+### 1. API Key Management
+Secure API credential handling.
+
+**Features:**
+- Environment variable storage
+- No hardcoded credentials
+- Secure transmission
+- HMAC SHA256 signatures
+
+**Key Benefits:**
+- Secure credentials
+- No exposure
+- Authenticated requests
+- Secure communication
+
+---
+
+### 2. Position Isolation
+Isolated margin management.
+
+**Features:**
+- Per-position margin tracking
+- Margin limit enforcement
+- Automatic order rejection
+- Margin safety
+
+**Key Benefits:**
+- Position safety
+- Margin protection
+- Automatic limits
+- Risk containment
+
+---
+
+## 📊 Performance Metrics
+
+### 1. Volume Tracking
+Comprehensive volume analytics.
+
+**Metrics:**
+- Total volume generated
+- Hourly volume rate
+- 24-hour projection
+- Required rate vs. actual rate
+- Status indicators
+
+**Key Benefits:**
+- Volume visibility
+- Performance tracking
+- Rate analysis
+- Goal monitoring
+
+---
+
+### 2. PnL Analysis
+Real-time profitability tracking.
+
+**Metrics:**
+- Unrealized PnL (USD)
+- Unrealized PnL (%)
+- Total PnL (including fees)
+- Position count
+- Average PnL per position
+
+**Key Benefits:**
+- Profitability visibility
+- Performance analysis
+- Cost tracking
+- ROI calculation
+
+---
+
+### 3. Margin Analytics
+Margin usage monitoring.
+
+**Metrics:**
+- Current margin used
+- Margin limit
+- Usage percentage
+- Available margin
+- Status indicators
+
+**Key Benefits:**
+- Margin visibility
+- Risk monitoring
+- Capacity planning
+- Safety alerts
+
+---
+
+## 🚀 Deployment & Operations
+
+### 1. Docker Containerization
+Easy deployment with Docker.
+
+**Features:**
+- Docker image
+- Docker Compose orchestration
+- Multi-container setup
+- Easy scaling
+
+**Key Benefits:**
+- Easy deployment
+- Consistent environment
+- Scalability
+- Portability
+
+---
+
+### 2. Monitoring Services
+Dedicated monitoring infrastructure.
+
+**Services:**
+- Monitoring API
+- Real-time dashboard
+- WebSocket manager
+- Log aggregation
+
+**Key Benefits:**
+- Comprehensive monitoring
+- Real-time updates
+- Centralized logging
+- Easy management
+
+---
+
+### 3. Automatic Recovery
+Self-healing capabilities.
+
+**Features:**
+- Automatic reconnection
+- ListenKey refresh
+- Error recovery
+- Graceful degradation
+
+**Key Benefits:**
+- Reliable operation
+- Minimal downtime
+- Automatic recovery
+- Continuous operation
+
+---
+
+## 📋 Summary
+
+Asterbot provides a complete trading automation solution with:
+
+✅ **Automated Trading** - Volume generation with randomization  
+✅ **Risk Management** - Multi-layer stop-loss, take-profit, circuit breaker  
+✅ **Position Management** - Real-time tracking and control  
+✅ **Market Intelligence** - Correlation analysis and constraint validation  
+✅ **Monitoring** - Real-time dashboard and WebSocket updates  
+✅ **Advanced Features** - Randomization, rate limiting, error recovery  
+✅ **Security** - Secure credential handling and position isolation  
+✅ **Performance** - Comprehensive metrics and analytics  
+✅ **Deployment** - Docker containerization and easy scaling  
+✅ **Operations** - Automatic recovery and self-healing  
+
+**Status:** Production Ready - All features tested and verified
+
+---
+
+**Last Updated:** 2025-10-20  
+**Version:** 1.0
