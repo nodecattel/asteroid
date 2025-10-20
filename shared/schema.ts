@@ -1,9 +1,8 @@
 import { z } from "zod";
 
 // Bot Configuration Schema
+// Note: API credentials are now stored in .env for security
 export const botConfigSchema = z.object({
-  apiKey: z.string(),
-  apiSecret: z.string(),
   baseUrl: z.string().default('https://fapi.asterdex.com'),
   
   // Market & Trading

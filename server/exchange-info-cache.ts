@@ -14,11 +14,35 @@ interface SymbolInfo {
   filters?: any[];
 }
 
+interface TickerInfo {
+  symbol: string;
+  priceChange: string;
+  priceChangePercent: string;
+  lastPrice: string;
+  volume: string;
+  quoteVolume: string;
+}
+
 interface ExchangeInfoData {
   symbols: SymbolInfo[];
   rateLimits: any[];
   exchangeFilters: any[];
   timestamp: number;
+}
+
+interface EnrichedMarket {
+  symbol: string;
+  baseAsset: string;
+  quoteAsset: string;
+  status: string;
+  maxLeverage?: number;
+  pricePrecision: number;
+  quantityPrecision: number;
+  volume24h: number;
+  quoteVolume24h: number;
+  priceChange24h: number;
+  priceChangePercent24h: number;
+  lastPrice: number;
 }
 
 export class ExchangeInfoCache {
@@ -66,30 +90,46 @@ export class ExchangeInfoCache {
     };
   }
 
-  async getAvailableMarkets(): Promise<Array<{
-    symbol: string;
-    baseAsset: string;
-    quoteAsset: string;
-    status: string;
-    maxLeverage?: number;
-    pricePrecision: number;
-    quantityPrecision: number;
-  }>> {
+  async getAvailableMarkets(): Promise<EnrichedMarket[]> {
     const info = await this.getExchangeInfo();
     
-    // Filter only TRADING symbols
-    return info.symbols
+    // Fetch 24hr ticker data for all symbols
+    let tickers: TickerInfo[] = [];
+    try {
+      const tickerData = await this.client.get24hrTicker();
+      tickers = Array.isArray(tickerData) ? tickerData : [tickerData];
+    } catch (error) {
+      console.error('Failed to fetch 24hr ticker data:', error);
+      // Continue without ticker data if it fails
+    }
+    
+    // Create a map of symbol to ticker data for quick lookup
+    const tickerMap = new Map<string, TickerInfo>();
+    tickers.forEach(t => tickerMap.set(t.symbol, t));
+    
+    // Filter only TRADING symbols and enrich with ticker data
+    const enrichedMarkets = info.symbols
       .filter(s => s.status === 'TRADING')
-      .map(s => ({
-        symbol: s.symbol,
-        baseAsset: s.baseAsset,
-        quoteAsset: s.quoteAsset,
-        status: s.status,
-        maxLeverage: s.maxLeverage,
-        pricePrecision: s.pricePrecision,
-        quantityPrecision: s.quantityPrecision,
-      }))
-      .sort((a, b) => a.symbol.localeCompare(b.symbol));
+      .map(s => {
+        const ticker = tickerMap.get(s.symbol);
+        return {
+          symbol: s.symbol,
+          baseAsset: s.baseAsset,
+          quoteAsset: s.quoteAsset,
+          status: s.status,
+          maxLeverage: s.maxLeverage,
+          pricePrecision: s.pricePrecision,
+          quantityPrecision: s.quantityPrecision,
+          volume24h: ticker ? parseFloat(ticker.volume) : 0,
+          quoteVolume24h: ticker ? parseFloat(ticker.quoteVolume) : 0,
+          priceChange24h: ticker ? parseFloat(ticker.priceChange) : 0,
+          priceChangePercent24h: ticker ? parseFloat(ticker.priceChangePercent) : 0,
+          lastPrice: ticker ? parseFloat(ticker.lastPrice) : 0,
+        };
+      });
+    
+    // Sort by 24h quote volume (highest first)
+    return enrichedMarkets.sort((a, b) => b.quoteVolume24h - a.quoteVolume24h);
   }
 
   clearCache(): void {

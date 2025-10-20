@@ -29,6 +29,11 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot }: BotSel
     maxLeverage?: number;
     pricePrecision: number;
     quantityPrecision: number;
+    volume24h: number;
+    quoteVolume24h: number;
+    priceChange24h: number;
+    priceChangePercent24h: number;
+    lastPrice: number;
   }> }>({
     queryKey: ['/api/markets'],
     refetchInterval: 5 * 60 * 1000, // Refresh every 5 minutes
@@ -36,9 +41,15 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot }: BotSel
 
   const availableMarkets = marketsData?.data || [];
 
+  // Format large numbers (volume)
+  const formatVolume = (volume: number): string => {
+    if (volume >= 1e9) return `${(volume / 1e9).toFixed(2)}B`;
+    if (volume >= 1e6) return `${(volume / 1e6).toFixed(2)}M`;
+    if (volume >= 1e3) return `${(volume / 1e3).toFixed(2)}K`;
+    return volume.toFixed(2);
+  };
+
   const [formData, setFormData] = useState({
-    apiKey: '',
-    apiSecret: '',
     marketSymbol: 'ETHUSDT',
     leverage: 10,
     investmentUsdt: 10,
@@ -228,29 +239,6 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot }: BotSel
             <DialogTitle>Create New Bot</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="apiKey">API Key</Label>
-                <Input
-                  id="apiKey"
-                  data-testid="input-api-key"
-                  type="password"
-                  value={formData.apiKey}
-                  onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="apiSecret">API Secret</Label>
-                <Input
-                  id="apiSecret"
-                  data-testid="input-api-secret"
-                  type="password"
-                  value={formData.apiSecret}
-                  onChange={(e) => setFormData({ ...formData, apiSecret: e.target.value })}
-                />
-              </div>
-            </div>
-
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="marketSymbol">Market</Label>
@@ -261,13 +249,35 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot }: BotSel
                   <SelectTrigger data-testid="select-market">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-[400px]">
                     {availableMarkets.length === 0 ? (
                       <SelectItem value="ETHUSDT">Loading markets...</SelectItem>
                     ) : (
                       availableMarkets.map((market) => (
                         <SelectItem key={market.symbol} value={market.symbol}>
-                          {market.symbol}{market.maxLeverage ? ` (${market.maxLeverage}x)` : ''}
+                          <div className="flex flex-col py-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold">{market.symbol}</span>
+                              {market.maxLeverage && (
+                                <Badge variant="secondary" className="text-xs px-1 py-0">
+                                  {market.maxLeverage}x
+                                </Badge>
+                              )}
+                              {market.priceChangePercent24h !== undefined && market.priceChangePercent24h !== null && (
+                                <span className={`text-xs ${market.priceChangePercent24h >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                  {market.priceChangePercent24h >= 0 ? '+' : ''}{market.priceChangePercent24h.toFixed(2)}%
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                              {market.quoteVolume24h > 0 && (
+                                <span>Vol: ${formatVolume(market.quoteVolume24h)}</span>
+                              )}
+                              {market.lastPrice > 0 && (
+                                <span>Price: ${market.lastPrice.toFixed(market.pricePrecision)}</span>
+                              )}
+                            </div>
+                          </div>
                         </SelectItem>
                       ))
                     )}
@@ -370,7 +380,7 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot }: BotSel
               data-testid="button-submit-bot"
               className="w-full"
               onClick={() => createBotMutation.mutate(formData)}
-              disabled={createBotMutation.isPending || !formData.apiKey || !formData.apiSecret}
+              disabled={createBotMutation.isPending}
             >
               {createBotMutation.isPending ? 'Creating...' : 'Create Bot'}
             </Button>

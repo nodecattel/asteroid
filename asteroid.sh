@@ -106,6 +106,20 @@ create_env_file() {
     echo "Let's set up your environment variables..."
     echo ""
     
+    # Asterdex API credentials
+    print_warning "You need Asterdex API credentials to run the bot"
+    print_info "Get them from: https://asterdex.com/settings/api"
+    echo ""
+    read -p "Enter your Asterdex API Key: " api_key
+    read -p "Enter your Asterdex API Secret: " api_secret
+    
+    if [ -z "$api_key" ] || [ -z "$api_secret" ]; then
+        print_error "API credentials are required to run the bot"
+        exit 1
+    fi
+    
+    echo ""
+    
     # Port configuration
     read -p "Enter the port to run the application (default: 5000): " port
     port=${port:-5000}
@@ -139,6 +153,10 @@ PORT=$port
 
 # Session Secret (auto-generated)
 SESSION_SECRET=$session_secret
+
+# Asterdex API Credentials
+ASTERDEX_API_KEY=$api_key
+ASTERDEX_API_SECRET=$api_secret
 
 # Database Configuration
 DATABASE_URL=$database_url

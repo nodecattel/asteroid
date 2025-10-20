@@ -3,6 +3,12 @@ import { storage } from './storage';
 import { BotConfig } from '@shared/schema';
 import { EventEmitter } from 'events';
 
+// Internal config type that includes credentials from environment
+type BotEngineConfig = BotConfig & {
+  apiKey: string;
+  apiSecret: string;
+};
+
 export class BotManager extends EventEmitter {
   private bots: Map<string, BotEngine> = new Map();
   private static instance: BotManager;
@@ -19,9 +25,12 @@ export class BotManager extends EventEmitter {
   }
 
   async createBot(config: BotConfig): Promise<string> {
-    // Validate config
-    if (!config.apiKey || !config.apiSecret) {
-      throw new Error('API key and secret are required');
+    // Validate environment variables
+    const apiKey = process.env.ASTERDEX_API_KEY;
+    const apiSecret = process.env.ASTERDEX_API_SECRET;
+    
+    if (!apiKey || !apiSecret) {
+      throw new Error('ASTERDEX_API_KEY and ASTERDEX_API_SECRET must be set in environment variables');
     }
 
     // Check if bot with same market already exists and is running
@@ -38,8 +47,9 @@ export class BotManager extends EventEmitter {
     // Create bot instance in storage
     const instance = await storage.createBotInstance(config);
 
-    // Create bot engine
-    const bot = new BotEngine(instance.id, config);
+    // Create bot engine with env credentials
+    const engineConfig: BotEngineConfig = { ...config, apiKey, apiSecret };
+    const bot = new BotEngine(instance.id, engineConfig);
 
     // Set up event forwarding
     bot.on('orderPlaced', (data) => this.emit('orderPlaced', data));
@@ -63,7 +73,15 @@ export class BotManager extends EventEmitter {
         throw new Error(`Bot ${botId} not found`);
       }
 
-      const newBot = new BotEngine(instance.id, instance.config);
+      const apiKey = process.env.ASTERDEX_API_KEY;
+      const apiSecret = process.env.ASTERDEX_API_SECRET;
+      
+      if (!apiKey || !apiSecret) {
+        throw new Error('ASTERDEX_API_KEY and ASTERDEX_API_SECRET must be set in environment variables');
+      }
+
+      const engineConfig: BotEngineConfig = { ...instance.config, apiKey, apiSecret };
+      const newBot = new BotEngine(instance.id, engineConfig);
       
       // Set up event forwarding
       newBot.on('orderPlaced', (data) => this.emit('orderPlaced', data));
