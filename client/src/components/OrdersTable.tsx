@@ -63,10 +63,10 @@ export default function OrdersTable({ orders, onCancelOrder }: OrdersTableProps)
                   </Badge>
                 </td>
                 <td className="px-4 py-2 text-sm font-mono text-right tabular-nums">
-                  ${order.price.toFixed(2)}
+                  ${typeof order.price === 'string' ? parseFloat(order.price).toFixed(2) : order.price.toFixed(2)}
                 </td>
                 <td className="px-4 py-2 text-sm font-mono text-right tabular-nums">
-                  {order.quantity.toFixed(4)}
+                  {typeof order.quantity === 'string' ? parseFloat(order.quantity).toFixed(4) : order.quantity.toFixed(4)}
                 </td>
                 <td className="px-4 py-2 text-sm">
                   <Badge variant="outline" className="font-mono text-xs">

@@ -326,14 +326,25 @@ export class AsterdexClient {
       recvWindow: 5000,
     };
 
+    console.log('[Asterdex Client] Batch orders request:', JSON.stringify(orders, null, 2).substring(0, 1000));
+
     const queryString = this.buildQueryString(params);
     const signature = this.createSignature(queryString);
 
-    const response = await this.axiosInstance.post(
-      `/fapi/v1/batchOrders?${queryString}&signature=${signature}`
-    );
-    
-    return response.data;
+    try {
+      const response = await this.axiosInstance.post(
+        `/fapi/v1/batchOrders?${queryString}&signature=${signature}`
+      );
+      
+      console.log('[Asterdex Client] Batch orders SUCCESS response:', JSON.stringify(response.data).substring(0, 500));
+      return response.data;
+    } catch (error: any) {
+      console.error('[Asterdex Client] Batch orders ERROR response:', JSON.stringify(error.response?.data || error.message));
+      if (error.response?.data) {
+        return error.response.data;
+      }
+      throw error;
+    }
   }
 
   async queryOrder(symbol: string, orderId?: string, origClientOrderId?: string): Promise<any> {

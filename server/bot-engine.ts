@@ -70,12 +70,23 @@ export class BotEngine extends EventEmitter {
   }
   
   private generateClientOrderId(): string {
-    // Format: {shortId}_{index} (max 36 chars, valid chars only)
-    // Example: "a1b2c3d4_50001" (14 chars)
-    const orderId = `${this.botShortId}_${this.orderIndex++}`;
+    // Format: bot_{shortId}_{index} (max 36 chars, valid chars only)
+    // Prefix with 'bot_' to ensure it starts with a letter
+    // Example: "bot_781ea178_50001" (18 chars)
+    const orderId = `bot_${this.botShortId}_${this.orderIndex++}`;
+    console.log(`[Bot ${this.botId}] Generated client order ID: "${orderId}" (length: ${orderId.length})`);
+    
     if (orderId.length > 36) {
       throw new Error(`Client order ID too long: ${orderId.length} chars`);
     }
+    
+    // Validate pattern: ^[\.A-Z\:/a-z0-9_-]{1,36}$
+    const validPattern = /^[\.A-Z\:/a-z0-9_-]{1,36}$/;
+    if (!validPattern.test(orderId)) {
+      console.error(`[Bot ${this.botId}] Invalid order ID pattern: "${orderId}"`);
+      throw new Error(`Client order ID doesn't match required pattern`);
+    }
+    
     return orderId;
   }
 
@@ -360,7 +371,17 @@ export class BotEngine extends EventEmitter {
         // Calculate order size
         const effectiveCapital = this.config.investmentUsdt * this.config.leverage;
         const orderSize = (effectiveCapital * this.config.orderSizePercent) / 100;
-        const quantity = this.formatQuantity(orderSize / referencePrice);
+        const rawQuantity = orderSize / referencePrice;
+        const quantity = this.formatQuantity(rawQuantity);
+        
+        console.log(`[Bot ${this.botId}] Order calculation: effectiveCapital=${effectiveCapital}, orderSize=${orderSize}, rawQuantity=${rawQuantity}, formatted=${quantity}`);
+        
+        // Check for zero quantity
+        if (parseFloat(quantity) === 0 || isNaN(parseFloat(quantity))) {
+          console.error(`[Bot ${this.botId}] ERROR: Calculated quantity is zero or invalid!`);
+          await this.sleep(this.config.refreshInterval * 1000);
+          continue;
+        }
 
         // Use batch orders for efficiency
         const batchOrders: any[] = [];
@@ -429,6 +450,8 @@ export class BotEngine extends EventEmitter {
         const maxBatchSize = 5;
         for (let i = 0; i < batchOrders.length; i += maxBatchSize) {
           const batch = batchOrders.slice(i, i + maxBatchSize);
+          
+          console.log(`[Bot ${this.botId}] Sending batch with client order IDs:`, batch.map(o => o.newClientOrderId));
           
           try {
             const batchResponse = await this.client.placeBatchOrders(batch);
@@ -907,12 +930,12 @@ export class BotEngine extends EventEmitter {
     this.emit('log', { botId: this.botId, type, message });
   }
 
-  private formatPrice(price: number): number {
-    return parseFloat(price.toFixed(this.pricePrecision));
+  private formatPrice(price: number): string {
+    return price.toFixed(this.pricePrecision);
   }
 
-  private formatQuantity(quantity: number): number {
-    return parseFloat(quantity.toFixed(this.quantityPrecision));
+  private formatQuantity(quantity: number): string {
+    return quantity.toFixed(this.quantityPrecision);
   }
 
   private sleep(ms: number): Promise<void> {
