@@ -19,6 +19,8 @@ The Asterdex Volume Generator Bot is a comprehensive trading application designe
 - 🐛 **Order Size Fix**: Changed default orderSizePercent from 0.1% to 25% for meaningful trade sizes
 - ✅ **Mobile Responsiveness**: Complete mobile optimization with responsive grids, typography, and spacing
 - ✅ **Footer Component**: Added NodeCattel branding (© 2025) with Asterdex referral link and GitHub link
+- 🐛 **CRITICAL: Tick Size Validation Fix**: Resolved "Price not increased by tick size" errors by extracting and using exchange-specific filters (PRICE_FILTER tickSize, LOT_SIZE stepSize, MIN_NOTIONAL minNotional) for every market pair, ensuring all order prices/quantities meet exchange requirements
+- ✅ **Bot Parameter Editing**: Running bots can now be edited via PATCH /api/bots/:botId/config endpoint - all parameters (investment, leverage, spread, TP/SL, trading bias, etc.) can be updated without stopping the bot
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
