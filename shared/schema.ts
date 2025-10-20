@@ -26,6 +26,19 @@ export const botConfigSchema = z.object({
   delayAfterCancel: z.number().nonnegative(),
   maxOrdersToPlace: z.number().int().positive(),
   
+  // Risk Management (NEW)
+  enableStopLoss: z.boolean().default(true),
+  stopLossPercent: z.number().positive().default(2.0), // % from entry price
+  enableTakeProfit: z.boolean().default(true),
+  takeProfitPercent: z.number().positive().default(5.0), // % from entry price
+  enableTrailingStop: z.boolean().default(false),
+  trailingStopCallbackRate: z.number().positive().default(1.0), // % trailing distance
+  trailingStopActivationPercent: z.number().positive().default(2.0), // Activate after X% profit
+  circuitBreakerEnabled: z.boolean().default(true),
+  circuitBreakerThreshold: z.number().positive().default(20.0), // Max unrealized loss in USDT
+  earlyWarningThreshold50: z.boolean().default(true), // Warn at 50% of stop-loss
+  earlyWarningThreshold75: z.boolean().default(true), // Warn at 75% of stop-loss
+  
   // Advanced
   usePostOnly: z.boolean().default(false),
   tradingFeePercent: z.number().nonnegative().default(0.2),
@@ -57,27 +70,81 @@ export const botStatsSchema = z.object({
   hourlyVolume: z.number(),
   hourlyTrades: z.number(),
   sessionUptime: z.number(), // in seconds
+  
+  // Position & Risk Metrics (NEW)
+  openPositions: z.number().default(0),
+  totalPositionValue: z.number().default(0), // Total notional value
+  unrealizedPnL: z.number().default(0), // Sum of all position unrealized PnL
+  realizedPnL: z.number().default(0), // Sum of all position realized PnL
+  positionsWithStopLoss: z.number().default(0),
+  positionsWithTakeProfit: z.number().default(0),
+  trailingStopsActive: z.number().default(0),
+  circuitBreakerTriggered: z.boolean().default(false),
+  riskScore: z.number().default(0), // 0-100 risk assessment
 });
 
 export type BotStats = z.infer<typeof botStatsSchema>;
 
-// Order Schema
+// Order Schema - Enhanced with TP/SL order types
 export const orderSchema = z.object({
   id: z.string(),
   botId: z.string(),
   clientOrderId: z.string(),
   symbol: z.string(),
   side: z.enum(['BUY', 'SELL']),
-  type: z.enum(['LIMIT', 'MARKET']),
+  type: z.enum(['LIMIT', 'MARKET', 'STOP_MARKET', 'TAKE_PROFIT_MARKET', 'TRAILING_STOP_MARKET']),
   price: z.number(),
   quantity: z.number(),
   filledQuantity: z.number().optional(),
+  stopPrice: z.number().optional(), // For STOP_MARKET orders
+  activationPrice: z.number().optional(), // For TRAILING_STOP_MARKET
+  callbackRate: z.number().optional(), // For TRAILING_STOP_MARKET
+  workingType: z.enum(['MARK_PRICE', 'CONTRACT_PRICE']).optional().default('MARK_PRICE'),
+  positionSide: z.enum(['BOTH', 'LONG', 'SHORT']).optional().default('BOTH'),
+  priceProtect: z.boolean().optional().default(false),
   status: z.enum(['PENDING', 'NEW', 'PARTIALLY_FILLED', 'FILLED', 'CANCELED', 'REJECTED', 'EXPIRED', 'FAILED']),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
 
 export type Order = z.infer<typeof orderSchema>;
+
+// Position Schema - Track open positions with TP/SL
+export const positionSchema = z.object({
+  id: z.string(),
+  botId: z.string(),
+  symbol: z.string(),
+  side: z.enum(['LONG', 'SHORT']),
+  entryPrice: z.number(),
+  currentPrice: z.number(),
+  quantity: z.number(),
+  leverage: z.number(),
+  unrealizedPnl: z.number(),
+  realizedPnl: z.number(),
+  
+  // TP/SL Protection
+  stopLossPrice: z.number().optional(),
+  stopLossOrderId: z.string().optional(), // Native exchange order ID
+  takeProfitPrice: z.number().optional(),
+  takeProfitOrderId: z.string().optional(), // Native exchange order ID
+  
+  // Trailing Stop
+  trailingStopActive: z.boolean().default(false),
+  trailingStopOrderId: z.string().optional(),
+  peakProfit: z.number().default(0), // Track peak profit for trailing
+  
+  // Risk Monitoring
+  riskLevel: z.enum(['safe', 'warning', 'danger', 'critical']),
+  warningTriggered50: z.boolean().default(false),
+  warningTriggered75: z.boolean().default(false),
+  
+  // Timestamps
+  openedAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+  closedAt: z.string().datetime().optional(),
+});
+
+export type Position = z.infer<typeof positionSchema>;
 
 // Activity Log Schema
 export const activityLogSchema = z.object({
