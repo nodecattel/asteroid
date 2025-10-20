@@ -298,6 +298,17 @@ export class BotEngine extends EventEmitter {
       }
     }
 
+    // Close all positions with market orders
+    try {
+      if (this.positions.size > 0) {
+        await this.addLog('info', `Closing ${this.positions.size} position(s) before stopping...`);
+        await this.closeAllPositions();
+        await this.addLog('success', 'All positions closed');
+      }
+    } catch (error: any) {
+      await this.addLog('error', `Failed to close positions: ${error.message}`);
+    }
+
     // Cancel all open orders
     try {
       await this.client.cancelAllOrders(this.config.marketSymbol);
