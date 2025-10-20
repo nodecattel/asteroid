@@ -10,6 +10,7 @@ import VolumeChart, { HourlyData } from "@/components/VolumeChart";
 import ConfigPanel from "@/components/ConfigPanel";
 import BotSelector from "@/components/BotSelector";
 import AccountInfo from "@/components/AccountInfo";
+import Footer from "@/components/Footer";
 import { DollarSign, Activity, TrendingUp, Clock, Zap, Target } from "lucide-react";
 import type { BotInstance, BotStats } from "@shared/schema";
 
@@ -157,7 +158,7 @@ export default function Dashboard() {
     : 0;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <StatusBar
         botStatus={selectedBot?.status || "stopped"}
         market={selectedBot?.marketSymbol || "N/A"}
@@ -167,7 +168,7 @@ export default function Dashboard() {
         onSettings={() => {}}
       />
       
-      <div className="max-w-[1600px] mx-auto px-6 py-6 space-y-6">
+      <div className="flex-1 max-w-[1600px] mx-auto w-full px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
         {/* Account Information */}
         <AccountInfo />
 
@@ -181,7 +182,7 @@ export default function Dashboard() {
         {selectedBot && (
           <>
             {/* Metrics Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               <MetricCard
                 label="Total Volume"
                 value={`$${stats.totalVolume.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`}
@@ -221,7 +222,7 @@ export default function Dashboard() {
             </div>
 
             {/* Activity Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
               <ActivityFeed logs={logs} />
               <VolumeChart data={chartData} />
             </div>
@@ -247,6 +248,8 @@ export default function Dashboard() {
           </div>
         )}
       </div>
+      
+      <Footer />
     </div>
   );
 }
