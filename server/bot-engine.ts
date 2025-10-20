@@ -746,29 +746,29 @@ export class BotEngine extends EventEmitter {
         const markPrice = this.marketData.markPrice;
         const pnlPercent = this.calculatePnLPercent(position, markPrice);
 
-        // Check stop-loss trigger
+        // Check stop-loss trigger (same logic for both LONG and SHORT)
+        // calculatePnLPercent returns negative when losing money for both sides
         if (this.config.enableStopLoss) {
-          const stopLossTriggered = position.side === 'LONG'
-            ? pnlPercent <= -this.config.stopLossPercent
-            : pnlPercent >= this.config.stopLossPercent;
+          const stopLossTriggered = pnlPercent <= -this.config.stopLossPercent;
 
           if (stopLossTriggered) {
-            await this.addLog('warning', `Manual stop-loss triggered! PnL: ${pnlPercent.toFixed(2)}%`);
+            await this.addLog('warning', `🛑 Stop-loss triggered! ${position.side} position closed at PnL: ${pnlPercent.toFixed(2)}%`);
             await this.closePosition(position);
             this.positions.delete(positionId);
+            continue; // Skip to next position after closing
           }
         }
 
-        // Check take-profit trigger
+        // Check take-profit trigger (same logic for both LONG and SHORT)
+        // calculatePnLPercent returns positive when making money for both sides
         if (this.config.enableTakeProfit) {
-          const takeProfitTriggered = position.side === 'LONG'
-            ? pnlPercent >= this.config.takeProfitPercent
-            : pnlPercent <= -this.config.takeProfitPercent;
+          const takeProfitTriggered = pnlPercent >= this.config.takeProfitPercent;
 
           if (takeProfitTriggered) {
-            await this.addLog('success', `Manual take-profit triggered! PnL: ${pnlPercent.toFixed(2)}%`);
+            await this.addLog('success', `✅ Take-profit triggered! ${position.side} position closed at PnL: ${pnlPercent.toFixed(2)}%`);
             await this.closePosition(position);
             this.positions.delete(positionId);
+            continue; // Skip to next position after closing
           }
         }
 
