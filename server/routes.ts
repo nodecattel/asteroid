@@ -62,6 +62,71 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get account balance
+  app.get('/api/account/balance', async (req, res) => {
+    try {
+      const apiKey = process.env.ASTERDEX_API_KEY;
+      const apiSecret = process.env.ASTERDEX_API_SECRET;
+
+      if (!apiKey || !apiSecret) {
+        return res.status(400).json({
+          success: false,
+          error: 'ASTERDEX_API_KEY and ASTERDEX_API_SECRET must be set in environment variables'
+        });
+      }
+
+      const client = new AsterdexClient(apiKey, apiSecret);
+      const accountInfo = await client.getAccountInfo();
+      
+      res.json({
+        success: true,
+        data: {
+          totalWalletBalance: accountInfo.totalWalletBalance,
+          availableBalance: accountInfo.availableBalance,
+          totalUnrealizedProfit: accountInfo.totalUnrealizedProfit,
+          totalMarginBalance: accountInfo.totalMarginBalance,
+          assets: accountInfo.assets,
+        }
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  // Get open positions
+  app.get('/api/account/positions', async (req, res) => {
+    try {
+      const apiKey = process.env.ASTERDEX_API_KEY;
+      const apiSecret = process.env.ASTERDEX_API_SECRET;
+
+      if (!apiKey || !apiSecret) {
+        return res.status(400).json({
+          success: false,
+          error: 'ASTERDEX_API_KEY and ASTERDEX_API_SECRET must be set in environment variables'
+        });
+      }
+
+      const client = new AsterdexClient(apiKey, apiSecret);
+      const positions = await client.getPositionRisk();
+      
+      // Filter out positions with no quantity
+      const activePositions = positions.filter((p: any) => Math.abs(parseFloat(p.positionAmt)) > 0);
+      
+      res.json({
+        success: true,
+        data: activePositions
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
   // Get all bot instances
   app.get('/api/bots', async (req, res) => {
     try {

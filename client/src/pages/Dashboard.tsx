@@ -9,6 +9,7 @@ import ActivityFeed, { ActivityLog } from "@/components/ActivityFeed";
 import VolumeChart, { HourlyData } from "@/components/VolumeChart";
 import ConfigPanel from "@/components/ConfigPanel";
 import BotSelector from "@/components/BotSelector";
+import AccountInfo from "@/components/AccountInfo";
 import { DollarSign, Activity, TrendingUp, Clock, Zap, Target } from "lucide-react";
 import type { BotInstance, BotStats } from "@shared/schema";
 
@@ -167,6 +168,9 @@ export default function Dashboard() {
       />
       
       <div className="max-w-[1600px] mx-auto px-6 py-6 space-y-6">
+        {/* Account Information */}
+        <AccountInfo />
+
         {/* Bot Selector */}
         <BotSelector
           bots={bots}
