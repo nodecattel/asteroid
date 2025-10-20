@@ -46,6 +46,11 @@ export class BotEngine extends EventEmitter {
   // Symbol precision
   private pricePrecision: number = 2;
   private quantityPrecision: number = 6;
+  
+  // Symbol filters (tick size, step size, min notional)
+  private tickSize: number = 0.01;
+  private stepSize: number = 0.001;
+  private minNotional: number = 5;
 
   // Performance tracking
   private commissionRate: { maker: number; taker: number } | null = null;
@@ -107,6 +112,29 @@ export class BotEngine extends EventEmitter {
       if (symbolInfo) {
         this.pricePrecision = symbolInfo.pricePrecision || 2;
         this.quantityPrecision = symbolInfo.quantityPrecision || 6;
+        
+        // Extract filters for tick size, step size, and min notional
+        if (symbolInfo.filters && Array.isArray(symbolInfo.filters)) {
+          const priceFilter = symbolInfo.filters.find((f: any) => f.filterType === 'PRICE_FILTER');
+          if (priceFilter && priceFilter.tickSize) {
+            this.tickSize = parseFloat(priceFilter.tickSize);
+            console.log(`[Bot ${this.botId}] Tick size: ${this.tickSize}`);
+          }
+          
+          const lotSizeFilter = symbolInfo.filters.find((f: any) => f.filterType === 'LOT_SIZE');
+          if (lotSizeFilter && lotSizeFilter.stepSize) {
+            this.stepSize = parseFloat(lotSizeFilter.stepSize);
+            console.log(`[Bot ${this.botId}] Step size: ${this.stepSize}`);
+          }
+          
+          const minNotionalFilter = symbolInfo.filters.find((f: any) => f.filterType === 'MIN_NOTIONAL');
+          if (minNotionalFilter && minNotionalFilter.notional) {
+            this.minNotional = parseFloat(minNotionalFilter.notional);
+            console.log(`[Bot ${this.botId}] Min notional: ${this.minNotional}`);
+          }
+        }
+        
+        await this.addLog('info', `Filters: Tick ${this.tickSize}, Step ${this.stepSize}, Min ${this.minNotional} USDT`);
       }
 
       // Get commission rates
@@ -388,7 +416,17 @@ export class BotEngine extends EventEmitter {
 
         // Prepare buy orders
         for (let i = 0; i < Math.min(this.config.ordersPerSide, this.config.maxOrdersToPlace); i++) {
-          const price = this.formatPrice(referencePrice - spreadAmount - (i * spreadAmount * 0.1));
+          const rawPrice = referencePrice - spreadAmount - (i * spreadAmount * 0.1);
+          const price = this.formatPrice(rawPrice);
+          const priceNum = parseFloat(price);
+          const qtyNum = parseFloat(quantity);
+          
+          // Validate minimum notional
+          if (!this.validateOrderNotional(priceNum, qtyNum)) {
+            console.log(`[Bot ${this.botId}] Skipping BUY order ${i+1}: Notional ${(priceNum * qtyNum).toFixed(2)} < ${this.minNotional}`);
+            continue;
+          }
+          
           const clientOrderId = this.generateClientOrderId();
           
           batchOrders.push({
@@ -418,7 +456,17 @@ export class BotEngine extends EventEmitter {
 
         // Prepare sell orders
         for (let i = 0; i < Math.min(this.config.ordersPerSide, this.config.maxOrdersToPlace); i++) {
-          const price = this.formatPrice(referencePrice + spreadAmount + (i * spreadAmount * 0.1));
+          const rawPrice = referencePrice + spreadAmount + (i * spreadAmount * 0.1);
+          const price = this.formatPrice(rawPrice);
+          const priceNum = parseFloat(price);
+          const qtyNum = parseFloat(quantity);
+          
+          // Validate minimum notional
+          if (!this.validateOrderNotional(priceNum, qtyNum)) {
+            console.log(`[Bot ${this.botId}] Skipping SELL order ${i+1}: Notional ${(priceNum * qtyNum).toFixed(2)} < ${this.minNotional}`);
+            continue;
+          }
+          
           const clientOrderId = this.generateClientOrderId();
           
           batchOrders.push({
@@ -931,11 +979,20 @@ export class BotEngine extends EventEmitter {
   }
 
   private formatPrice(price: number): string {
-    return price.toFixed(this.pricePrecision);
+    // Round to tick size: price = round(price / tickSize) * tickSize
+    const rounded = Math.round(price / this.tickSize) * this.tickSize;
+    return rounded.toFixed(this.pricePrecision);
   }
 
   private formatQuantity(quantity: number): string {
-    return quantity.toFixed(this.quantityPrecision);
+    // Round to step size: quantity = round(quantity / stepSize) * stepSize
+    const rounded = Math.round(quantity / this.stepSize) * this.stepSize;
+    return rounded.toFixed(this.quantityPrecision);
+  }
+  
+  private validateOrderNotional(price: number, quantity: number): boolean {
+    const notional = price * quantity;
+    return notional >= this.minNotional;
   }
 
   private sleep(ms: number): Promise<void> {
