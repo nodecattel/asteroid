@@ -64,7 +64,7 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot }: BotSel
     spreadBps: 5,
     ordersPerSide: 3,
     orderSizePercent: 25,
-    refreshInterval: 2.0,
+    refreshInterval: 60,
     tradingBias: 'neutral' as 'neutral' | 'long' | 'short',
     longBiasPercent: 50,
     delayBetweenOrders: 0.05,
