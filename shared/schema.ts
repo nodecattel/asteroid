@@ -149,6 +149,24 @@ export const positionSchema = z.object({
 
 export type Position = z.infer<typeof positionSchema>;
 
+// Trade Schema - Track individual filled trades for history
+export const tradeSchema = z.object({
+  id: z.string(),
+  botId: z.string(),
+  orderId: z.string(), // Reference to the order that was filled
+  symbol: z.string(),
+  side: z.enum(['BUY', 'SELL']),
+  price: z.number(),
+  quantity: z.number(),
+  quoteQuantity: z.number(), // price * quantity
+  commission: z.number(),
+  commissionAsset: z.string().default('USDT'),
+  realizedPnl: z.number().default(0), // Calculated when matching buy/sell
+  timestamp: z.string().datetime(),
+});
+
+export type Trade = z.infer<typeof tradeSchema>;
+
 // Activity Log Schema
 export const activityLogSchema = z.object({
   id: z.string(),

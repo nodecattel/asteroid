@@ -6,7 +6,8 @@ import {
   type Order,
   type ActivityLog,
   type HourlyVolume,
-  type BotConfig
+  type BotConfig,
+  type Trade
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -39,6 +40,11 @@ export interface IStorage {
   addHourlyVolume(data: HourlyVolume): Promise<void>;
   updateHourlyVolume(botId: string, hour: string, volume: number): Promise<void>;
   getHourlyVolume(botId: string): Promise<HourlyVolume[]>;
+  
+  // Trades
+  createTrade(trade: Omit<Trade, 'id'>): Promise<Trade>;
+  getTradesByBot(botId: string, limit?: number): Promise<Trade[]>;
+  calculateRealizedPnL(botId: string): Promise<number>;
 }
 
 export class MemStorage implements IStorage {
@@ -47,6 +53,7 @@ export class MemStorage implements IStorage {
   private orders: Map<string, Order> = new Map();
   private activityLogs: Map<string, ActivityLog[]> = new Map();
   private hourlyVolume: Map<string, HourlyVolume[]> = new Map();
+  private trades: Map<string, Trade[]> = new Map();
 
   // Bot Instance Methods
   async createBotInstance(config: BotConfig): Promise<BotInstance> {
@@ -214,6 +221,68 @@ export class MemStorage implements IStorage {
 
   async getHourlyVolume(botId: string): Promise<HourlyVolume[]> {
     return this.hourlyVolume.get(botId) || [];
+  }
+
+  // Trade Methods
+  async createTrade(trade: Omit<Trade, 'id'>): Promise<Trade> {
+    const id = randomUUID();
+    const newTrade: Trade = { ...trade, id };
+    
+    const trades = this.trades.get(trade.botId) || [];
+    trades.push(newTrade);
+    this.trades.set(trade.botId, trades);
+    
+    return newTrade;
+  }
+
+  async getTradesByBot(botId: string, limit?: number): Promise<Trade[]> {
+    const trades = this.trades.get(botId) || [];
+    // Return most recent trades first
+    const sorted = [...trades].sort((a, b) => 
+      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+    
+    return limit ? sorted.slice(0, limit) : sorted;
+  }
+
+  async calculateRealizedPnL(botId: string): Promise<number> {
+    const trades = this.trades.get(botId) || [];
+    
+    // Simple P&L calculation: Match BUY and SELL trades
+    const buys: Trade[] = [];
+    const sells: Trade[] = [];
+    
+    for (const trade of trades) {
+      if (trade.side === 'BUY') {
+        buys.push(trade);
+      } else {
+        sells.push(trade);
+      }
+    }
+    
+    let totalPnL = 0;
+    
+    // Match sells with buys (FIFO)
+    for (const sell of sells) {
+      let remainingQty = sell.quantity;
+      
+      for (const buy of buys) {
+        if (remainingQty <= 0) break;
+        
+        const matchedQty = Math.min(remainingQty, buy.quantity);
+        const pnl = (sell.price - buy.price) * matchedQty;
+        totalPnL += pnl;
+        
+        remainingQty -= matchedQty;
+        buy.quantity -= matchedQty; // Update remaining quantity
+      }
+    }
+    
+    // Subtract commissions
+    const totalCommission = trades.reduce((sum, t) => sum + t.commission, 0);
+    totalPnL -= totalCommission;
+    
+    return totalPnL;
   }
 }
 
