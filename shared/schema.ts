@@ -20,7 +20,7 @@ export const botConfigSchema = z.object({
   orderSpacingBps: z.number().positive().default(2), // Spread between subsequent orders
   ordersPerSide: z.number().int().positive(),
   orderSizePercent: z.number().positive(),
-  cycleTimeSeconds: z.number().min(3).max(300).default(5), // Trading loop cycle time (3-300s)
+  cycleTimeSeconds: z.number().min(1).max(300).default(5), // Trading loop cycle time (1-300s, 5s recommended)
   refreshInterval: z.number().min(30).default(60), // Minimum 30s to allow orders to fill
   tradingBias: z.enum(['neutral', 'long', 'short']).default('neutral'), // Side preference
   longBiasPercent: z.number().min(0).max(100).default(50), // % of orders on long side (50 = neutral)

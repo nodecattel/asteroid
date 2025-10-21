@@ -680,7 +680,7 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
                           id="cycleTime"
                           data-testid="input-cycle-time"
                           type="number"
-                          min="3"
+                          min="1"
                           max="300"
                           value={formData.cycleTimeSeconds}
                           onChange={(e) => setFormData({ ...formData, cycleTimeSeconds: Number(e.target.value) })}

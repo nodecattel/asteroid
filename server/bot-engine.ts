@@ -842,7 +842,7 @@ export class BotEngine extends EventEmitter {
             symbol: this.config.marketSymbol,
             side: position.side === 'LONG' ? 'SELL' : 'BUY',
             type: 'STOP_MARKET',
-            quantity: position.quantity,
+            quantity: this.formatQuantity(position.quantity),
             stopPrice: this.formatPrice(stopLossPrice),
             reduceOnly: true,
             workingType: 'MARK_PRICE',
@@ -864,7 +864,7 @@ export class BotEngine extends EventEmitter {
             symbol: this.config.marketSymbol,
             side: position.side === 'LONG' ? 'SELL' : 'BUY',
             type: 'TAKE_PROFIT_MARKET',
-            quantity: position.quantity,
+            quantity: this.formatQuantity(position.quantity),
             stopPrice: this.formatPrice(takeProfitPrice),
             reduceOnly: true,
             workingType: 'MARK_PRICE',
@@ -897,7 +897,7 @@ export class BotEngine extends EventEmitter {
       // Cancel stop-loss
       if (position.stopLossOrderId) {
         try {
-          await this.client.cancelOrder(this.config.marketSymbol, { orderId: position.stopLossOrderId });
+          await this.client.cancelOrder(this.config.marketSymbol, position.stopLossOrderId);
         } catch (error) {
           // Order might already be filled or cancelled
         }
@@ -906,7 +906,7 @@ export class BotEngine extends EventEmitter {
       // Cancel take-profit
       if (position.takeProfitOrderId) {
         try {
-          await this.client.cancelOrder(this.config.marketSymbol, { orderId: position.takeProfitOrderId });
+          await this.client.cancelOrder(this.config.marketSymbol, position.takeProfitOrderId);
         } catch (error) {
           // Order might already be filled or cancelled
         }
@@ -915,7 +915,7 @@ export class BotEngine extends EventEmitter {
       // Cancel trailing stop
       if (position.trailingStopOrderId) {
         try {
-          await this.client.cancelOrder(this.config.marketSymbol, { orderId: position.trailingStopOrderId });
+          await this.client.cancelOrder(this.config.marketSymbol, position.trailingStopOrderId);
         } catch (error) {
           // Order might already be filled or cancelled
         }
