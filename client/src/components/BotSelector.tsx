@@ -469,7 +469,12 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
                         step="0.01"
                         min="0.01"
                         value={formData.marginUsdt}
-                        onChange={(e) => setFormData({ ...formData, marginUsdt: Number(e.target.value) })}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          if (!isNaN(val) && val > 0) {
+                            setFormData({ ...formData, marginUsdt: val });
+                          }
+                        }}
                         className="text-base h-11"
                       />
                     </div>
@@ -1053,7 +1058,12 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
                         step="0.01"
                         min="0.01"
                         value={formData.marginUsdt}
-                        onChange={(e) => setFormData({ ...formData, marginUsdt: Number(e.target.value) })}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          if (!isNaN(val) && val > 0) {
+                            setFormData({ ...formData, marginUsdt: val });
+                          }
+                        }}
                         className="text-base h-11"
                       />
                     </div>
