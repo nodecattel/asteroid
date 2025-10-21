@@ -476,9 +476,9 @@ export class BotEngine extends EventEmitter {
           continue;
         }
 
-        // Calculate order size using total investment budget approach
-        // Total budget available for margin
-        const totalBudget = this.config.investmentUsdt;
+        // Calculate order size using margin-based risk model
+        // Total margin (your capital) to risk
+        const totalBudget = this.config.marginUsdt;
         
         // Calculate how much notional value we want per order
         // orderSizePercent now refers to % of total budget to use per order

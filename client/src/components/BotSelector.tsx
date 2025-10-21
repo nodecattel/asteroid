@@ -59,7 +59,7 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
   const [formData, setFormData] = useState({
     marketSymbol: '',
     leverage: 5,
-    investmentUsdt: 10,
+    marginUsdt: 10,
     targetVolume: 100000,
     maxLoss: 10,
     targetHours: 24,
@@ -452,24 +452,24 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
                     </div>
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
-                        <Label htmlFor="investment">Investment (USDT)</Label>
+                        <Label htmlFor="margin">Margin (USDT)</Label>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Info className="w-4 h-4 text-muted-foreground cursor-help" />
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs">
-                            <p>Base capital in USDT. Effective capital = Investment × Leverage</p>
+                            <p>Your capital at risk. With {formData.leverage}x leverage, your position size will be ${(formData.marginUsdt * formData.leverage).toFixed(2)} USDT</p>
                           </TooltipContent>
                         </Tooltip>
                       </div>
                       <Input
-                        id="investment"
-                        data-testid="input-investment"
+                        id="margin"
+                        data-testid="input-margin"
                         type="number"
                         step="0.01"
                         min="0.01"
-                        value={formData.investmentUsdt}
-                        onChange={(e) => setFormData({ ...formData, investmentUsdt: Number(e.target.value) })}
+                        value={formData.marginUsdt}
+                        onChange={(e) => setFormData({ ...formData, marginUsdt: Number(e.target.value) })}
                         className="text-base h-11"
                       />
                     </div>
@@ -1037,23 +1037,23 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
                     </div>
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
-                        <Label htmlFor="edit-investment">Investment (USDT)</Label>
+                        <Label htmlFor="edit-margin">Margin (USDT)</Label>
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <Info className="w-4 h-4 text-muted-foreground cursor-help" />
                           </TooltipTrigger>
                           <TooltipContent className="max-w-xs">
-                            <p>Base capital in USDT. Effective capital = Investment × Leverage</p>
+                            <p>Your capital at risk. With {formData.leverage}x leverage, your position size will be ${(formData.marginUsdt * formData.leverage).toFixed(2)} USDT</p>
                           </TooltipContent>
                         </Tooltip>
                       </div>
                       <Input
-                        id="edit-investment"
+                        id="edit-margin"
                         type="number"
                         step="0.01"
                         min="0.01"
-                        value={formData.investmentUsdt}
-                        onChange={(e) => setFormData({ ...formData, investmentUsdt: Number(e.target.value) })}
+                        value={formData.marginUsdt}
+                        onChange={(e) => setFormData({ ...formData, marginUsdt: Number(e.target.value) })}
                         className="text-base h-11"
                       />
                     </div>

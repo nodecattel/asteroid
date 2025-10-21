@@ -164,7 +164,7 @@ export default function Dashboard() {
   const config = selectedBot ? [
     { label: "Market", value: selectedBot.config.marketSymbol, category: "Trading" },
     { label: "Leverage", value: `${selectedBot.config.leverage}x`, category: "Trading" },
-    { label: "Investment", value: `$${selectedBot.config.investmentUsdt.toFixed(2)}`, category: "Trading" },
+    { label: "Margin", value: `$${selectedBot.config.marginUsdt.toFixed(2)}`, category: "Trading" },
     { label: "Target Volume", value: `$${selectedBot.config.targetVolume.toLocaleString()}`, category: "Targets" },
     { label: "Target Hours", value: `${selectedBot.config.targetHours}h`, category: "Targets" },
     { label: "Max Loss", value: `$${selectedBot.config.maxLoss.toFixed(2)}`, category: "Targets" },

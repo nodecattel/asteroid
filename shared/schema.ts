@@ -8,7 +8,7 @@ export const botConfigSchema = z.object({
   // Market & Trading
   marketSymbol: z.string(),
   leverage: z.number().int().positive(),
-  investmentUsdt: z.number().positive(),
+  marginUsdt: z.number().positive(), // Margin to risk (your capital), not notional value
   
   // Volume Targets
   targetVolume: z.number().positive(),
