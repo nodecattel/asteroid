@@ -58,8 +58,10 @@ export class BotEngine extends EventEmitter {
   // Position tracking (NEW)
   private positions: Map<string, TrackedPosition> = new Map();
   private netPosition: number = 0; // Net position quantity (positive = long, negative = short)
+  private previousPositionSide: 'LONG' | 'SHORT' | 'NONE' = 'NONE'; // Track previous position side
   private circuitBreakerTriggered: boolean = false;
   private lastProtectionOrderUpdate: Map<string, number> = new Map(); // Track last TP/SL update time per position
+  private pendingSideChangeUpdate: Map<string, NodeJS.Timeout> = new Map(); // Buffer timers for side change TP/SL updates
 
   // Smart order management
   private lastOrderPrice: number = 0; // Track last reference price when orders were placed
@@ -317,6 +319,12 @@ export class BotEngine extends EventEmitter {
       clearInterval(this.statusTimer);
       this.statusTimer = null;
     }
+
+    // Clear any pending side change TP/SL update timers
+    Array.from(this.pendingSideChangeUpdate.entries()).forEach(([positionId, timer]) => {
+      clearTimeout(timer);
+      this.pendingSideChangeUpdate.delete(positionId);
+    });
 
     // Stop user data stream
     if (this.userDataStream) {
@@ -806,9 +814,11 @@ export class BotEngine extends EventEmitter {
 
       if (Math.abs(this.netPosition) > 0.0001) { // Position exists
         const positionSide: 'LONG' | 'SHORT' = this.netPosition > 0 ? 'LONG' : 'SHORT';
+        const sideChanged = this.previousPositionSide !== 'NONE' && this.previousPositionSide !== positionSide;
         
         if (!existingPosition || existingPosition.side !== positionSide) {
-          // New position opened
+          // Position side changed (LONG <-> SHORT) or new position opened
+          const isNewPosition = !existingPosition;
           const newPosition: TrackedPosition = {
             side: positionSide,
             entryPrice: price,
@@ -819,11 +829,26 @@ export class BotEngine extends EventEmitter {
           };
           
           this.positions.set(positionId, newPosition);
-          await this.addLog('info', `Position opened: ${positionSide} ${Math.abs(this.netPosition)} @ ${price}`);
           
-          // Place native TP/SL orders (Layer 1 protection)
-          await this.placeProtectionOrders(positionId, newPosition);
-          this.lastProtectionOrderUpdate.set(positionId, Date.now());
+          if (sideChanged) {
+            await this.addLog('warning', `⚠️ Position side changed: ${this.previousPositionSide} → ${positionSide}. TP/SL will update in 8s...`);
+            
+            // Cancel existing protection orders immediately
+            if (existingPosition) {
+              await this.cancelProtectionOrders(positionId, existingPosition);
+            }
+            
+            // Schedule TP/SL recalculation with 8-second buffer to avoid exchange errors
+            this.scheduleSideChangeTPSLUpdate(positionId, newPosition);
+          } else {
+            await this.addLog('info', `Position opened: ${positionSide} ${Math.abs(this.netPosition)} @ ${price}`);
+            
+            // Place native TP/SL orders immediately for new positions
+            await this.placeProtectionOrders(positionId, newPosition);
+            this.lastProtectionOrderUpdate.set(positionId, Date.now());
+          }
+          
+          this.previousPositionSide = positionSide;
         } else {
           // Position size changed - update entry price (weighted average)
           const totalQty = existingPosition.quantity + Math.abs(quantityChange);
@@ -833,7 +858,7 @@ export class BotEngine extends EventEmitter {
           
           await this.addLog('info', `Position updated: ${positionSide} ${existingPosition.quantity} @ ${existingPosition.entryPrice}`);
           
-          // Update protection orders
+          // Update protection orders (respects 30s cooldown)
           await this.updateProtectionOrders(positionId, existingPosition);
         }
       } else {
@@ -842,6 +867,14 @@ export class BotEngine extends EventEmitter {
           await this.addLog('success', `Position closed: ${existingPosition.side}`);
           await this.cancelProtectionOrders(positionId, existingPosition);
           this.positions.delete(positionId);
+          this.previousPositionSide = 'NONE';
+          
+          // Clear any pending side change updates
+          const pendingTimer = this.pendingSideChangeUpdate.get(positionId);
+          if (pendingTimer) {
+            clearTimeout(pendingTimer);
+            this.pendingSideChangeUpdate.delete(positionId);
+          }
         }
       }
 
@@ -849,6 +882,39 @@ export class BotEngine extends EventEmitter {
     } catch (error: any) {
       console.error('Error updating position tracking:', error);
     }
+  }
+
+  private scheduleSideChangeTPSLUpdate(positionId: string, position: TrackedPosition): void {
+    // Clear any existing pending timer for this position
+    const existingTimer = this.pendingSideChangeUpdate.get(positionId);
+    if (existingTimer) {
+      clearTimeout(existingTimer);
+    }
+    
+    // Schedule TP/SL update with 8-second buffer to avoid exchange errors
+    const timer = setTimeout(async () => {
+      try {
+        // Check if position still exists (might have been closed)
+        const currentPosition = this.positions.get(positionId);
+        if (!currentPosition || currentPosition.side !== position.side) {
+          console.log(`[Bot ${this.botId}] Position changed or closed, skipping scheduled TP/SL update`);
+          this.pendingSideChangeUpdate.delete(positionId);
+          return;
+        }
+        
+        await this.addLog('info', `Placing TP/SL for ${position.side} position after side change...`);
+        await this.placeProtectionOrders(positionId, position);
+        this.lastProtectionOrderUpdate.set(positionId, Date.now());
+        this.pendingSideChangeUpdate.delete(positionId);
+        await this.addLog('success', `TP/SL recalculated for new ${position.side} position`);
+      } catch (error: any) {
+        console.error(`[Bot ${this.botId}] Error in scheduled TP/SL update:`, error);
+        await this.addLog('error', `Failed to update TP/SL after side change: ${error.message}`);
+        this.pendingSideChangeUpdate.delete(positionId);
+      }
+    }, 8000); // 8-second buffer
+    
+    this.pendingSideChangeUpdate.set(positionId, timer);
   }
 
   private async placeProtectionOrders(positionId: string, position: TrackedPosition): Promise<void> {
