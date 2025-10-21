@@ -40,7 +40,8 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot }: BotSel
     lastPrice: number;
   }> }>({
     queryKey: ['/api/markets'],
-    refetchInterval: 5 * 60 * 1000, // Refresh every 5 minutes
+    refetchInterval: 60 * 1000, // Refresh every 60 seconds for fresh data
+    staleTime: 0, // Consider data stale immediately
   });
 
   const availableMarkets = marketsData?.data || [];

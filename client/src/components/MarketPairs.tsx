@@ -1,9 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, TrendingUp, TrendingDown, ArrowUpDown } from "lucide-react";
+import { Search, TrendingUp, TrendingDown, ArrowUpDown, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface Market {
@@ -25,18 +25,55 @@ interface Market {
 type SortField = 'volume' | 'change' | 'symbol' | 'funding';
 type SortDirection = 'asc' | 'desc';
 
+const FAVORITES_KEY = 'astroid_favorite_markets';
+
 export default function MarketPairs() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState<SortField>('volume');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+  const [favorites, setFavorites] = useState<Set<string>>(new Set());
 
-  // Fetch markets data
+  // Load favorites from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(FAVORITES_KEY);
+      if (saved) {
+        setFavorites(new Set(JSON.parse(saved)));
+      }
+    } catch (error) {
+      console.error('Error loading favorites:', error);
+    }
+  }, []);
+
+  // Save favorites to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem(FAVORITES_KEY, JSON.stringify(Array.from(favorites)));
+    } catch (error) {
+      console.error('Error saving favorites:', error);
+    }
+  }, [favorites]);
+
+  // Fetch markets data with 1 minute cache
   const { data: marketsData, isLoading } = useQuery<{ success: boolean; data: Market[] }>({
     queryKey: ['/api/markets'],
-    refetchInterval: 60 * 1000, // Refresh every minute
+    refetchInterval: 60 * 1000, // Refresh every 60 seconds
+    staleTime: 0, // Consider data stale immediately
   });
 
   const markets = marketsData?.data || [];
+
+  const toggleFavorite = (symbol: string) => {
+    setFavorites(prev => {
+      const newFavorites = new Set(prev);
+      if (newFavorites.has(symbol)) {
+        newFavorites.delete(symbol);
+      } else {
+        newFavorites.add(symbol);
+      }
+      return newFavorites;
+    });
+  };
 
   // Filter and sort markets
   const filteredAndSortedMarkets = useMemo(() => {
@@ -47,6 +84,14 @@ export default function MarketPairs() {
 
     // Sort
     filtered.sort((a, b) => {
+      // Always sort favorites first
+      const aIsFav = favorites.has(a.symbol);
+      const bIsFav = favorites.has(b.symbol);
+      
+      if (aIsFav && !bIsFav) return -1;
+      if (!aIsFav && bIsFav) return 1;
+      
+      // Then sort by selected field
       let comparison = 0;
       
       switch (sortField) {
@@ -70,7 +115,7 @@ export default function MarketPairs() {
     });
 
     return filtered;
-  }, [markets, searchQuery, sortField, sortDirection]);
+  }, [markets, searchQuery, sortField, sortDirection, favorites]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -102,7 +147,14 @@ export default function MarketPairs() {
     <Card data-testid="card-market-pairs">
       <CardHeader className="pb-3">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <CardTitle className="text-lg font-semibold">Market Pairs</CardTitle>
+          <div className="flex items-center gap-2">
+            <CardTitle className="text-lg font-semibold">Market Pairs</CardTitle>
+            {favorites.size > 0 && (
+              <Badge variant="secondary" className="text-xs">
+                {favorites.size} favorite{favorites.size !== 1 ? 's' : ''}
+              </Badge>
+            )}
+          </div>
           <div className="relative w-full sm:w-64">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
@@ -190,78 +242,96 @@ export default function MarketPairs() {
                   {searchQuery ? 'No markets found matching your search' : 'No markets available'}
                 </div>
               ) : (
-                filteredAndSortedMarkets.map((market) => (
-                  <div
-                    key={market.symbol}
-                    className="grid grid-cols-12 gap-3 px-3 py-3 hover-elevate transition-colors"
-                    data-testid={`market-row-${market.symbol}`}
-                  >
-                    {/* Symbol with Leverage Badge */}
-                    <div className="col-span-3 flex items-center gap-2">
-                      <div className="flex flex-col">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono font-semibold text-sm" data-testid={`text-symbol-${market.symbol}`}>
-                            {market.baseAsset}
-                            <span className="text-muted-foreground">/{market.quoteAsset}</span>
-                          </span>
-                          <Badge variant="secondary" className="font-mono text-xs h-5" data-testid={`badge-leverage-${market.symbol}`}>
-                            {market.maxLeverage}x
-                          </Badge>
+                filteredAndSortedMarkets.map((market) => {
+                  const isFavorite = favorites.has(market.symbol);
+                  return (
+                    <div
+                      key={market.symbol}
+                      className="grid grid-cols-12 gap-3 px-3 py-3 hover-elevate transition-colors group"
+                      data-testid={`market-row-${market.symbol}`}
+                    >
+                      {/* Favorite Star + Symbol with Leverage Badge */}
+                      <div className="col-span-3 flex items-center gap-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => toggleFavorite(market.symbol)}
+                          className="h-6 w-6 hover-elevate shrink-0"
+                          data-testid={`button-favorite-${market.symbol}`}
+                        >
+                          <Star 
+                            className={`h-3.5 w-3.5 ${
+                              isFavorite 
+                                ? 'fill-primary text-primary' 
+                                : 'text-muted-foreground group-hover:text-foreground'
+                            }`}
+                          />
+                        </Button>
+                        <div className="flex flex-col min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-mono font-semibold text-sm" data-testid={`text-symbol-${market.symbol}`}>
+                              {market.baseAsset}
+                              <span className="text-muted-foreground">/{market.quoteAsset}</span>
+                            </span>
+                            <Badge variant="secondary" className="font-mono text-xs h-5" data-testid={`badge-leverage-${market.symbol}`}>
+                              {market.maxLeverage}x
+                            </Badge>
+                          </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Price */}
-                    <div className="col-span-2 flex items-center justify-end">
-                      <span className="font-mono text-sm" data-testid={`text-price-${market.symbol}`}>
-                        ${market.lastPrice.toFixed(market.pricePrecision)}
-                      </span>
-                    </div>
+                      {/* Price */}
+                      <div className="col-span-2 flex items-center justify-end">
+                        <span className="font-mono text-sm" data-testid={`text-price-${market.symbol}`}>
+                          ${market.lastPrice.toFixed(market.pricePrecision)}
+                        </span>
+                      </div>
 
-                    {/* 24h Change */}
-                    <div className="col-span-2 flex items-center">
-                      <div className="flex items-center gap-1">
-                        {market.priceChangePercent24h >= 0 ? (
-                          <TrendingUp className="h-3.5 w-3.5 text-primary" />
-                        ) : (
-                          <TrendingDown className="h-3.5 w-3.5 text-destructive" />
-                        )}
-                        <span
-                          className={`font-mono text-sm font-medium ${
-                            market.priceChangePercent24h >= 0 ? 'text-primary' : 'text-destructive'
+                      {/* 24h Change */}
+                      <div className="col-span-2 flex items-center">
+                        <div className="flex items-center gap-1">
+                          {market.priceChangePercent24h >= 0 ? (
+                            <TrendingUp className="h-3.5 w-3.5 text-primary" />
+                          ) : (
+                            <TrendingDown className="h-3.5 w-3.5 text-destructive" />
+                          )}
+                          <span
+                            className={`font-mono text-sm font-medium ${
+                              market.priceChangePercent24h >= 0 ? 'text-primary' : 'text-destructive'
+                            }`}
+                            data-testid={`text-change-${market.symbol}`}
+                          >
+                            {market.priceChangePercent24h >= 0 ? '+' : ''}
+                            {market.priceChangePercent24h.toFixed(2)}%
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* 24h Volume */}
+                      <div className="col-span-3 flex items-center">
+                        <span className="font-mono text-sm" data-testid={`text-volume-${market.symbol}`}>
+                          {formatNumber(market.quoteVolume24h)}
+                        </span>
+                      </div>
+
+                      {/* Funding Rate */}
+                      <div className="col-span-2 flex items-center">
+                        <span 
+                          className={`font-mono text-sm ${
+                            market.fundingRate !== undefined && market.fundingRate !== null
+                              ? market.fundingRate >= 0 
+                                ? 'text-primary' 
+                                : 'text-destructive'
+                              : 'text-muted-foreground'
                           }`}
-                          data-testid={`text-change-${market.symbol}`}
+                          data-testid={`text-funding-${market.symbol}`}
                         >
-                          {market.priceChangePercent24h >= 0 ? '+' : ''}
-                          {market.priceChangePercent24h.toFixed(2)}%
+                          {formatFundingRate(market.fundingRate)}
                         </span>
                       </div>
                     </div>
-
-                    {/* 24h Volume */}
-                    <div className="col-span-3 flex items-center">
-                      <span className="font-mono text-sm" data-testid={`text-volume-${market.symbol}`}>
-                        {formatNumber(market.quoteVolume24h)}
-                      </span>
-                    </div>
-
-                    {/* Funding Rate */}
-                    <div className="col-span-2 flex items-center">
-                      <span 
-                        className={`font-mono text-sm ${
-                          market.fundingRate !== undefined && market.fundingRate !== null
-                            ? market.fundingRate >= 0 
-                              ? 'text-primary' 
-                              : 'text-destructive'
-                            : 'text-muted-foreground'
-                        }`}
-                        data-testid={`text-funding-${market.symbol}`}
-                      >
-                        {formatFundingRate(market.fundingRate)}
-                      </span>
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
 
@@ -270,6 +340,7 @@ export default function MarketPairs() {
               <div className="flex items-center justify-between px-3 py-2 border-t border-border text-xs text-muted-foreground mt-2">
                 <span>
                   Showing {filteredAndSortedMarkets.length} of {markets.length} markets
+                  {favorites.size > 0 && ` • ${favorites.size} favorited`}
                 </span>
                 <span>
                   Updated: {new Date().toLocaleTimeString()}

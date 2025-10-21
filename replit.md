@@ -15,7 +15,7 @@ The frontend uses React and TypeScript with Vite, featuring a custom terminal-in
 
 **Logo Integration**: Astroid logo appears on login page (large, centered above title), dashboard StatusBar (small, left side), and as favicon. Logo is a white asteroid/planet with rings on transparent background, perfectly matching the dark monochrome theme.
 
-**Market Pairs Display**: Comprehensive market overview at top of dashboard showing all 250+ Aster Dex trading pairs with real-time search and multi-field sorting (24h volume, 24h change, funding rate, symbol). Displays complete market data in an optimized layout: symbol with max leverage badge (positioned next to symbol for simplification), last price, 24h change with trend indicators, 24h volume (formatted), and funding rate (color-coded: green for positive, red for negative). Funding rates are fetched in batches and cached. Updates every 60 seconds.
+**Market Pairs Display**: Comprehensive market overview at top of dashboard showing all 250+ Aster Dex trading pairs with real-time search, multi-field sorting (24h volume, 24h change, funding rate, symbol), and favorites feature using localStorage. Displays complete market data in an optimized layout: favorite star icon, symbol with max leverage badge (positioned next to symbol for simplification), last price, 24h change with trend indicators, 24h volume (formatted), and funding rate (color-coded: green for positive, red for negative). Favorited markets always display first in the list. Funding rates are fetched in batches. Market data cached for 1 minute on backend and frontend for fresh data. Updates every 60 seconds.
 
 ### Technical Implementations
 **Frontend**:
@@ -35,10 +35,10 @@ The frontend uses React and TypeScript with Vite, featuring a custom terminal-in
 - **Bot Manager**: A singleton orchestrator for multiple bot instances, coordinating lifecycle and broadcasting WebSocket events.
 - **Aster Dex API Client**: Provides complete API coverage with HMAC SHA256 authentication, rate limit protection, and automatic backoff.
 - **User Data Stream Manager**: Manages WebSocket connections to Aster Dex for real-time updates, including automatic reconnection and listen key keepalive.
-- **Exchange Info Cache**: Caches Aster Dex exchange information, 24hr ticker data, and leverage brackets.
+- **Exchange Info Cache**: Caches Aster Dex exchange information, 24hr ticker data, leverage brackets, and funding rates. Cache duration: 1 minute for fresh market data.
 
 ### Feature Specifications
-- **Market Pairs Overview**: Real-time display of all 250+ trading pairs with search functionality and multi-field sorting (24h volume, 24h change %, funding rate, symbol). Shows complete market information in optimized layout: symbol with max leverage badge (next to symbol), last price, 24h change with trend indicators, 24h volume (formatted), and funding rate (color-coded percentage). Funding rates fetched in batches from API. Positioned at top of dashboard for easy access. Auto-refreshes every 60 seconds.
+- **Market Pairs Overview**: Real-time display of all 250+ trading pairs with search functionality, multi-field sorting (24h volume, 24h change %, funding rate, symbol), and favorites feature. Shows complete market information in optimized layout: favorite star icon, symbol with max leverage badge (next to symbol), last price, 24h change with trend indicators, 24h volume (formatted), and funding rate (color-coded percentage). Favorites stored in localStorage and always display first. Funding rates fetched in batches from API. Market data cached for 1 minute (backend and frontend) for fresh data. Positioned at top of dashboard for easy access. Auto-refreshes every 60 seconds.
 - **Dynamic Market System**: Auto-discovers and caches markets from Aster Dex, providing rich data and sorting by volume.
 - **Secure Credential Management**: API credentials are stored in environment variables and are never exposed in the UI or per-bot configuration.
 - **100% Aster Dex API Utilization**: Full coverage of 60+ API methods for advanced orders, risk management, market intelligence, and account analytics.
