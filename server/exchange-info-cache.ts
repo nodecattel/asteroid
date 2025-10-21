@@ -43,6 +43,7 @@ interface EnrichedMarket {
   priceChange24h: number;
   priceChangePercent24h: number;
   lastPrice: number;
+  fundingRate?: number;
 }
 
 export class ExchangeInfoCache {
@@ -127,12 +128,37 @@ export class ExchangeInfoCache {
       });
     }
     
+    // Fetch funding rates for all symbols
+    const fundingRateMap = new Map<string, number>();
+    try {
+      const symbols = info.symbols.filter(s => s.status === 'TRADING').map(s => s.symbol);
+      // Fetch funding rates in batches to avoid overwhelming the API
+      const batchSize = 50;
+      for (let i = 0; i < symbols.length; i += batchSize) {
+        const batch = symbols.slice(i, i + batchSize);
+        await Promise.all(batch.map(async (symbol) => {
+          try {
+            const fundingRates = await this.client.getFundingRate(symbol, { limit: 1 });
+            if (fundingRates && fundingRates.length > 0) {
+              fundingRateMap.set(symbol, parseFloat(fundingRates[0].fundingRate));
+            }
+          } catch (error) {
+            // Silently fail for individual symbols
+          }
+        }));
+      }
+      console.log('[ExchangeInfoCache] Fetched funding rates for', fundingRateMap.size, 'symbols');
+    } catch (error) {
+      console.error('[ExchangeInfoCache] Error fetching funding rates:', error);
+    }
+    
     // Filter only TRADING symbols and enrich with ticker and leverage data
     const enrichedMarkets = info.symbols
       .filter(s => s.status === 'TRADING')
       .map(s => {
         const ticker = tickerMap.get(s.symbol);
         const maxLeverage = leverageMap.get(s.symbol) || 125; // Default to 125 if not found
+        const fundingRate = fundingRateMap.get(s.symbol);
         return {
           symbol: s.symbol,
           baseAsset: s.baseAsset,
@@ -146,6 +172,7 @@ export class ExchangeInfoCache {
           priceChange24h: ticker ? parseFloat(ticker.priceChange) : 0,
           priceChangePercent24h: ticker ? parseFloat(ticker.priceChangePercent) : 0,
           lastPrice: ticker ? parseFloat(ticker.lastPrice) : 0,
+          fundingRate: fundingRate,
         };
       });
     

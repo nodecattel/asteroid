@@ -19,9 +19,10 @@ interface Market {
   priceChange24h: number;
   priceChangePercent24h: number;
   lastPrice: number;
+  fundingRate?: number;
 }
 
-type SortField = 'volume' | 'change' | 'symbol';
+type SortField = 'volume' | 'change' | 'symbol' | 'funding';
 type SortDirection = 'asc' | 'desc';
 
 export default function MarketPairs() {
@@ -55,6 +56,11 @@ export default function MarketPairs() {
         case 'change':
           comparison = b.priceChangePercent24h - a.priceChangePercent24h;
           break;
+        case 'funding':
+          const aFunding = a.fundingRate || 0;
+          const bFunding = b.fundingRate || 0;
+          comparison = bFunding - aFunding;
+          break;
         case 'symbol':
           comparison = a.symbol.localeCompare(b.symbol);
           break;
@@ -86,6 +92,12 @@ export default function MarketPairs() {
     return `$${num.toFixed(decimals)}`;
   };
 
+  const formatFundingRate = (rate: number | undefined) => {
+    if (rate === undefined || rate === null) return 'N/A';
+    const percentage = rate * 100;
+    return `${percentage >= 0 ? '+' : ''}${percentage.toFixed(4)}%`;
+  };
+
   return (
     <Card data-testid="card-market-pairs">
       <CardHeader className="pb-3">
@@ -111,7 +123,7 @@ export default function MarketPairs() {
         ) : (
           <>
             {/* Header Row */}
-            <div className="grid grid-cols-12 gap-2 px-3 py-2 border-b border-border text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            <div className="grid grid-cols-12 gap-3 px-3 py-2 border-b border-border text-xs font-medium text-muted-foreground uppercase tracking-wider">
               <div className="col-span-3">
                 <Button
                   variant="ghost"
@@ -155,7 +167,20 @@ export default function MarketPairs() {
                   )}
                 </Button>
               </div>
-              <div className="col-span-2 text-right">Max Leverage</div>
+              <div className="col-span-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleSort('funding')}
+                  className="h-6 px-2 -ml-2 hover-elevate"
+                  data-testid="button-sort-funding"
+                >
+                  Funding Rate
+                  {sortField === 'funding' && (
+                    <ArrowUpDown className="ml-1 h-3 w-3" />
+                  )}
+                </Button>
+              </div>
             </div>
 
             {/* Market Rows */}
@@ -168,16 +193,21 @@ export default function MarketPairs() {
                 filteredAndSortedMarkets.map((market) => (
                   <div
                     key={market.symbol}
-                    className="grid grid-cols-12 gap-2 px-3 py-3 hover-elevate transition-colors"
+                    className="grid grid-cols-12 gap-3 px-3 py-3 hover-elevate transition-colors"
                     data-testid={`market-row-${market.symbol}`}
                   >
-                    {/* Symbol */}
+                    {/* Symbol with Leverage Badge */}
                     <div className="col-span-3 flex items-center gap-2">
                       <div className="flex flex-col">
-                        <span className="font-mono font-semibold text-sm" data-testid={`text-symbol-${market.symbol}`}>
-                          {market.baseAsset}
-                          <span className="text-muted-foreground">/{market.quoteAsset}</span>
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-semibold text-sm" data-testid={`text-symbol-${market.symbol}`}>
+                            {market.baseAsset}
+                            <span className="text-muted-foreground">/{market.quoteAsset}</span>
+                          </span>
+                          <Badge variant="secondary" className="font-mono text-xs h-5" data-testid={`badge-leverage-${market.symbol}`}>
+                            {market.maxLeverage}x
+                          </Badge>
+                        </div>
                       </div>
                     </div>
 
@@ -215,11 +245,20 @@ export default function MarketPairs() {
                       </span>
                     </div>
 
-                    {/* Max Leverage */}
-                    <div className="col-span-2 flex items-center justify-end">
-                      <Badge variant="secondary" className="font-mono text-xs" data-testid={`badge-leverage-${market.symbol}`}>
-                        {market.maxLeverage}x
-                      </Badge>
+                    {/* Funding Rate */}
+                    <div className="col-span-2 flex items-center">
+                      <span 
+                        className={`font-mono text-sm ${
+                          market.fundingRate !== undefined && market.fundingRate !== null
+                            ? market.fundingRate >= 0 
+                              ? 'text-primary' 
+                              : 'text-destructive'
+                            : 'text-muted-foreground'
+                        }`}
+                        data-testid={`text-funding-${market.symbol}`}
+                      >
+                        {formatFundingRate(market.fundingRate)}
+                      </span>
                     </div>
                   </div>
                 ))
