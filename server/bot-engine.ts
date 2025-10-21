@@ -1132,7 +1132,7 @@ export class BotEngine extends EventEmitter {
     this.config = { ...this.config, ...updates };
     
     // Update in storage
-    await storage.updateBot(this.botId, { config: this.config });
+    await storage.updateBotInstance(this.botId, { config: this.config });
     
     // Log the update
     const updatedFields = Object.keys(updates).join(', ');
