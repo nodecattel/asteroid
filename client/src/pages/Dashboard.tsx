@@ -19,6 +19,7 @@ import type { BotInstance, BotStats } from "@shared/schema";
 export default function Dashboard() {
   const [selectedBotId, setSelectedBotId] = useState<string | null>(null);
   const [sessionTime, setSessionTime] = useState("00:00:00");
+  const [initialSymbol, setInitialSymbol] = useState<string | undefined>(undefined);
 
   // Fetch all bots
   const { data: botsData } = useQuery<{ success: boolean; data: any[] }>({
@@ -218,13 +219,15 @@ export default function Dashboard() {
         <AccountInfo />
 
         {/* Market Pairs Overview */}
-        <MarketPairs />
+        <MarketPairs onCreateBot={setInitialSymbol} />
 
         {/* Bot Selector */}
         <BotSelector
           bots={bots}
           selectedBotId={selectedBotId}
           onSelectBot={setSelectedBotId}
+          initialSymbol={initialSymbol}
+          onSymbolUsed={() => setInitialSymbol(undefined)}
         />
 
         {selectedBot && (
