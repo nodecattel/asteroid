@@ -27,6 +27,9 @@ export default function TradesHistory({ trades, totalPnL }: TradesHistoryProps) 
     return `${hours}:${minutes}:${seconds}`;
   };
 
+  // Show recent trades on top (reverse order)
+  const sortedTrades = [...trades].reverse();
+
   return (
     <div className="space-y-4">
       {/* Summary Header */}
@@ -51,11 +54,11 @@ export default function TradesHistory({ trades, totalPnL }: TradesHistoryProps) 
         </span>
       </div>
 
-      {/* Trades Table */}
+      {/* Trades Table - Scrollable with max height */}
       <div className="border border-border rounded-md overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
           <table className="w-full">
-            <thead className="bg-muted/50 sticky top-0">
+            <thead className="bg-muted/50 sticky top-0 z-10">
               <tr className="border-b border-border">
                 <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                   Time
@@ -78,7 +81,7 @@ export default function TradesHistory({ trades, totalPnL }: TradesHistoryProps) 
               </tr>
             </thead>
             <tbody className="divide-y divide-border/50">
-              {trades.map((trade, idx) => (
+              {sortedTrades.map((trade, idx) => (
                 <tr 
                   key={trade.id} 
                   className="hover-elevate"
