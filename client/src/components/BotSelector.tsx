@@ -1073,14 +1073,14 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
                 <CardContent className="p-3 sm:p-6 pt-0">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="edit-spread">Spread (bps)</Label>
+                      <Label htmlFor="edit-spread">First Order Spread (bps)</Label>
                       <Input
                         id="edit-spread"
                         type="number"
                         step="0.1"
                         min="0.1"
-                        value={formData.spreadBps}
-                        onChange={(e) => setFormData({ ...formData, spreadBps: Number(e.target.value) })}
+                        value={formData.firstOrderSpreadBps}
+                        onChange={(e) => setFormData({ ...formData, firstOrderSpreadBps: Number(e.target.value) })}
                         className="h-11"
                       />
                     </div>
