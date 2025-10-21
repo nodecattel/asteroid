@@ -194,7 +194,7 @@ export class BotEngine extends EventEmitter {
             const fillQty = parseFloat(orderData.l);
             const fillPrice = parseFloat(orderData.L);
             
-            await this.trackFill(orderData.S, fillQty, fillPrice);
+            await this.trackFill(order.id, orderData.S, fillQty, fillPrice);
             await this.addLog('success', `Order ${orderData.X}: ${orderData.S} ${fillQty} @ ${fillPrice}`);
           }
 
@@ -633,7 +633,7 @@ export class BotEngine extends EventEmitter {
     }
   }
 
-  private async trackFill(side: string, quantity: number, price: number): Promise<void> {
+  private async trackFill(orderId: string, side: string, quantity: number, price: number): Promise<void> {
     const stats = await storage.getBotStats(this.botId);
     if (!stats) return;
 
@@ -641,6 +641,21 @@ export class BotEngine extends EventEmitter {
     const commission = this.commissionRate 
       ? volume * (this.config.usePostOnly ? this.commissionRate.maker : this.commissionRate.taker)
       : 0;
+
+    // Save individual trade to history
+    await storage.createTrade({
+      botId: this.botId,
+      orderId,
+      symbol: this.config.marketSymbol,
+      side: side as 'BUY' | 'SELL',
+      price,
+      quantity,
+      quoteQuantity: volume,
+      commission,
+      commissionAsset: 'USDT',
+      realizedPnl: 0, // Will be calculated later when matching trades
+      timestamp: new Date().toISOString(),
+    });
 
     await storage.updateBotStats(this.botId, {
       totalVolume: stats.totalVolume + volume,
