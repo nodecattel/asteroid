@@ -385,5 +385,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get bot trade history (protected)
+  app.get('/api/bots/:botId/trades', requireAuth, async (req, res) => {
+    try {
+      const { botId } = req.params;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
+      const trades = await storage.getTradesByBot(botId, limit);
+      const realizedPnL = await storage.calculateRealizedPnL(botId);
+      res.json({
+        success: true,
+        data: {
+          trades,
+          realizedPnL
+        }
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
   return httpServer;
 }
