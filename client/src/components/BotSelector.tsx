@@ -289,10 +289,10 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot }: BotSel
             New Bot
           </Button>
         </DialogTrigger>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto font-mono">
+        <DialogContent className="max-w-[95vw] sm:max-w-3xl lg:max-w-5xl max-h-[90vh] overflow-y-auto font-mono">
           <DialogHeader>
-            <DialogTitle className="text-2xl">Create New Trading Bot</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-xl sm:text-2xl">Create New Trading Bot</DialogTitle>
+            <DialogDescription className="text-sm">
               Configure your automated volume generation bot for Asterdex perpetual futures
             </DialogDescription>
           </DialogHeader>
@@ -311,7 +311,7 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot }: BotSel
                 <CardContent>
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
-                      <Label htmlFor="marketSymbol" className="min-w-[120px]">Trading Pair</Label>
+                      <Label htmlFor="marketSymbol">Trading Pair</Label>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Info className="w-4 h-4 text-muted-foreground cursor-help" />
@@ -376,7 +376,7 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot }: BotSel
                   <CardDescription>Set leverage and capital allocation</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
@@ -445,7 +445,7 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot }: BotSel
                   <CardDescription>Define trading volume goals and risk limits</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <Label htmlFor="targetVolume">Target Volume</Label>
@@ -528,7 +528,7 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot }: BotSel
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
                           <Label htmlFor="spreadBps">Spread (bps)</Label>
@@ -603,7 +603,7 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot }: BotSel
 
                     <Separator className="my-4" />
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
                           <Label htmlFor="tradingBias">Trading Bias</Label>
@@ -673,7 +673,7 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot }: BotSel
                 <CardContent>
                   <div className="space-y-4">
                     {/* Stop-Loss & Take-Profit */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
                           <Label htmlFor="stopLossPercent">Stop-Loss (%)</Label>
@@ -751,7 +751,7 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot }: BotSel
                         </div>
                       </div>
                       {formData.enableTrailingStop && (
-                        <div className="grid grid-cols-2 gap-4 pl-6 border-l-2 border-orange-500/30">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-3 sm:pl-6 border-l-2 border-orange-500/30">
                           <div className="space-y-2">
                             <div className="flex items-center gap-2">
                               <Label htmlFor="trailingStopActivation">Activation (%)</Label>
@@ -878,10 +878,10 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot }: BotSel
 
       {/* Edit Bot Dialog - Same as Create but with disabled market selector and update mutation */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto font-mono">
+        <DialogContent className="max-w-[95vw] sm:max-w-3xl lg:max-w-5xl max-h-[90vh] overflow-y-auto font-mono">
           <DialogHeader>
-            <DialogTitle className="text-2xl">Edit Bot Configuration</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-xl sm:text-2xl">Edit Bot Configuration</DialogTitle>
+            <DialogDescription className="text-sm">
               Modify parameters for {selectedBotData?.marketSymbol} bot (running bots will apply changes immediately)
             </DialogDescription>
           </DialogHeader>
@@ -916,7 +916,7 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot }: BotSel
                   <CardDescription>Set leverage and capital allocation</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
@@ -983,7 +983,7 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot }: BotSel
                   <CardDescription>Essential trading and risk parameters</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="edit-spread">Spread (bps)</Label>
                       <Input
