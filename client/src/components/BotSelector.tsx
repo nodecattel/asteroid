@@ -341,8 +341,8 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
           <TooltipProvider>
             <div className="space-y-4 sm:space-y-6">
               {/* Market Selection Section - Full Width */}
-              <Card>
-                <CardHeader className="pb-3">
+              <Card className="overflow-hidden">
+                <CardHeader className="pb-2 sm:pb-3">
                   <div className="flex items-center gap-2">
                     <TrendingUp className="w-5 h-5" />
                     <CardTitle className="text-lg">Market Selection</CardTitle>
@@ -408,8 +408,8 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
               </Card>
 
               {/* Trading Configuration */}
-              <Card>
-                <CardHeader className="pb-3">
+              <Card className="overflow-hidden">
+                <CardHeader className="pb-2 sm:pb-3">
                   <div className="flex items-center gap-2">
                     <Settings className="w-5 h-5" />
                     <CardTitle className="text-lg">Trading Configuration</CardTitle>
@@ -477,8 +477,8 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
               </Card>
 
               {/* Volume Targets */}
-              <Card>
-                <CardHeader className="pb-3">
+              <Card className="overflow-hidden">
+                <CardHeader className="pb-2 sm:pb-3">
                   <div className="flex items-center gap-2">
                     <Target className="w-5 h-5" />
                     <CardTitle className="text-lg">Volume Targets & Limits</CardTitle>
@@ -559,8 +559,8 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
               </Card>
 
               {/* Strategy Parameters */}
-              <Card>
-                <CardHeader className="pb-3">
+              <Card className="overflow-hidden">
+                <CardHeader className="pb-2 sm:pb-3">
                   <div className="flex items-center gap-2">
                     <Zap className="w-5 h-5" />
                     <CardTitle className="text-lg">Strategy Parameters</CardTitle>
@@ -951,7 +951,7 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
           </DialogHeader>
           
           <TooltipProvider>
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {/* Market Selection Section - Disabled for edit */}
               <Card>
                 <CardHeader className="pb-3">
@@ -1038,8 +1038,8 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
               </Card>
 
               {/* Key parameters only for edit (show less than create) */}
-              <Card>
-                <CardHeader className="pb-3">
+              <Card className="overflow-hidden">
+                <CardHeader className="pb-2 sm:pb-3">
                   <div className="flex items-center gap-2">
                     <Zap className="w-5 h-5" />
                     <CardTitle className="text-lg">Key Parameters</CardTitle>
