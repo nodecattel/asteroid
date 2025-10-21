@@ -3,9 +3,19 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, Star, ArrowUpDown } from "lucide-react";
+import { Search, Star, ArrowUpDown, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatCryptoPrice } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface Market {
   symbol: string;
@@ -29,12 +39,18 @@ type TabFilter = 'favorites' | 'all';
 
 const FAVORITES_KEY = 'astroid_favorite_markets';
 
-export default function MarketPairs() {
+interface MarketPairsProps {
+  onCreateBot?: (symbol: string) => void;
+}
+
+export default function MarketPairs({ onCreateBot }: MarketPairsProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState<SortField>('volume');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<TabFilter>('all');
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
 
   // Load favorites from localStorage on mount
   useEffect(() => {
@@ -77,6 +93,20 @@ export default function MarketPairs() {
       }
       return newFavorites;
     });
+  };
+
+  const handleCreateBotClick = (symbol: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedSymbol(symbol);
+    setConfirmDialogOpen(true);
+  };
+
+  const handleConfirmCreateBot = () => {
+    if (selectedSymbol && onCreateBot) {
+      onCreateBot(selectedSymbol);
+    }
+    setConfirmDialogOpen(false);
+    setSelectedSymbol(null);
   };
 
   // Filter and sort markets
@@ -209,7 +239,7 @@ export default function MarketPairs() {
           <>
             {/* Desktop Table Header */}
             <div className="hidden md:grid md:grid-cols-12 gap-4 px-4 sm:px-6 py-3 border-b border-border text-sm text-muted-foreground">
-              <div className="col-span-4 lg:col-span-3">
+              <div className="col-span-3 lg:col-span-3">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -223,7 +253,7 @@ export default function MarketPairs() {
                   )}
                 </Button>
               </div>
-              <div className="col-span-3 lg:col-span-3 text-right">
+              <div className="col-span-2 lg:col-span-2 text-right">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -237,7 +267,7 @@ export default function MarketPairs() {
                   )}
                 </Button>
               </div>
-              <div className="col-span-2 lg:col-span-3 text-right">
+              <div className="col-span-2 lg:col-span-2 text-right">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -251,7 +281,7 @@ export default function MarketPairs() {
                   )}
                 </Button>
               </div>
-              <div className="col-span-3 text-right">
+              <div className="col-span-3 lg:col-span-3 text-right">
                 <Button
                   variant="ghost"
                   size="sm"
@@ -264,6 +294,9 @@ export default function MarketPairs() {
                     <ArrowUpDown className="ml-1 h-3 w-3" />
                   )}
                 </Button>
+              </div>
+              <div className="col-span-2 lg:col-span-2 text-center">
+                Actions
               </div>
             </div>
 
@@ -314,7 +347,7 @@ export default function MarketPairs() {
                       {/* Desktop Layout */}
                       <div className="hidden md:grid md:grid-cols-12 gap-4 px-4 sm:px-6 py-3 items-center">
                         {/* Symbol + Volume */}
-                        <div className="col-span-4 lg:col-span-3 flex items-center gap-2.5">
+                        <div className="col-span-3 lg:col-span-3 flex items-center gap-2.5">
                           <button
                             onClick={(e) => toggleFavorite(market.symbol, e)}
                             className="text-muted-foreground hover:text-primary transition-colors shrink-0"
@@ -340,14 +373,14 @@ export default function MarketPairs() {
                         </div>
 
                         {/* Last Price */}
-                        <div className="col-span-3 lg:col-span-3 text-right">
+                        <div className="col-span-2 lg:col-span-2 text-right">
                           <span className="font-mono text-sm" data-testid={`text-price-${market.symbol}`}>
                             {formatCryptoPrice(market.lastPrice, market.pricePrecision)}
                           </span>
                         </div>
 
                         {/* 24h Change */}
-                        <div className="col-span-2 lg:col-span-3 text-right">
+                        <div className="col-span-2 lg:col-span-2 text-right">
                           <span
                             className={`font-mono text-sm font-medium ${
                               market.priceChangePercent24h >= 0 ? 'text-primary' : 'text-destructive'
@@ -360,7 +393,7 @@ export default function MarketPairs() {
                         </div>
 
                         {/* Funding Rate */}
-                        <div className="col-span-3 text-right">
+                        <div className="col-span-3 lg:col-span-3 text-right">
                           <span 
                             className={`font-mono text-sm ${
                               market.fundingRate !== undefined && market.fundingRate !== null
@@ -374,12 +407,26 @@ export default function MarketPairs() {
                             {formatFundingRate(market.fundingRate)}
                           </span>
                         </div>
+
+                        {/* Actions */}
+                        <div className="col-span-2 lg:col-span-2 flex justify-center">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => handleCreateBotClick(market.symbol, e)}
+                            className="h-8 px-3 gap-1.5 hover-elevate"
+                            data-testid={`button-create-bot-${market.symbol}`}
+                          >
+                            <Plus className="w-4 h-4" />
+                            <span className="text-xs">Bot</span>
+                          </Button>
+                        </div>
                       </div>
 
                       {/* Mobile Layout */}
                       <div className="md:hidden grid grid-cols-12 gap-2 px-4 py-3 items-center">
                         {/* Symbol + Volume */}
-                        <div className="col-span-6 flex items-center gap-2">
+                        <div className="col-span-5 flex items-center gap-2">
                           <button
                             onClick={(e) => toggleFavorite(market.symbol, e)}
                             className="text-muted-foreground hover:text-primary transition-colors shrink-0"
@@ -405,7 +452,7 @@ export default function MarketPairs() {
                         </div>
 
                         {/* Price + 24h Change */}
-                        <div className="col-span-6 text-right">
+                        <div className="col-span-4 text-right">
                           <div className="font-mono text-xs mb-0.5">
                             {formatCryptoPrice(market.lastPrice, market.pricePrecision)}
                           </div>
@@ -417,6 +464,19 @@ export default function MarketPairs() {
                             {market.priceChangePercent24h >= 0 ? '+' : ''}
                             {market.priceChangePercent24h.toFixed(2)}%
                           </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="col-span-3 flex justify-end">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => handleCreateBotClick(market.symbol, e)}
+                            className="h-8 w-8 hover-elevate"
+                            data-testid={`button-create-bot-mobile-${market.symbol}`}
+                          >
+                            <Plus className="w-4 h-4" />
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -439,6 +499,48 @@ export default function MarketPairs() {
           </>
         )}
       </CardContent>
+
+      {/* Confirmation Dialog */}
+      <AlertDialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
+        <AlertDialogContent data-testid="dialog-confirm-create-bot">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Create new bot?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Create new bot with <strong className="text-foreground">{selectedSymbol}</strong> pair?
+              {selectedSymbol && (() => {
+                const market = markets.find(m => m.symbol === selectedSymbol);
+                return market ? (
+                  <div className="mt-3 p-3 bg-muted rounded-md space-y-1.5">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Last Price:</span>
+                      <span className="font-mono">{formatCryptoPrice(market.lastPrice, market.pricePrecision)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">24h Change:</span>
+                      <span className={`font-mono ${market.priceChangePercent24h >= 0 ? 'text-primary' : 'text-destructive'}`}>
+                        {market.priceChangePercent24h >= 0 ? '+' : ''}{market.priceChangePercent24h.toFixed(2)}%
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Max Leverage:</span>
+                      <span className="font-medium">{market.maxLeverage}x</span>
+                    </div>
+                  </div>
+                ) : null;
+              })()}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-create-bot">Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleConfirmCreateBot}
+              data-testid="button-confirm-create-bot"
+            >
+              Continue
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
