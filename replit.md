@@ -61,7 +61,7 @@ The frontend uses React and TypeScript with Vite, featuring a custom terminal-in
 - **Configurable Cycle Time**: Added `cycleTimeSeconds` setting (default 5s, range 1-300s) allowing users to balance volume generation versus trade quality. Short cycles (1-10s) maximize volume but reduce fill rates; long cycles (30-60s) improve order fills but reduce volume. Replaces hardcoded 5-second loop delay.
 
 ### System Design Choices
-- **Investment Model**: Uses a total investment budget approach (`investmentUsdt`) where order sizes are dynamically calculated to fit within this budget, accounting for leverage and meeting exchange minimum notional requirements.
+- **Investment Model**: Uses a margin-based risk model (`marginUsdt`) where users specify the capital they want to risk. Order sizes are dynamically calculated to fit within this margin budget, with leverage multiplying the effective position size. Ensures compliance with exchange minimum notional requirements.
 - **Data Storage**: In-memory for development, with optional PostgreSQL using Drizzle ORM for production. Zod schemas ensure data integrity. API credentials are not stored in the database.
 - **Security**: Password-based access control, API credentials stored exclusively in `.env` files, and Express-session for session management with HttpOnly cookies.
 - **Port Configuration**: Supports `PORT` environment variable.
