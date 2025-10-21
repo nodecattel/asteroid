@@ -1,8 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Wallet, TrendingUp, TrendingDown, DollarSign } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Wallet, TrendingUp, TrendingDown, X } from "lucide-react";
 import { formatCryptoPrice } from "@/lib/utils";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface Position {
   symbol: string;
@@ -12,6 +15,7 @@ interface Position {
   unRealizedProfit: string;
   leverage: string;
   liquidationPrice: string;
+  isolated: boolean;
 }
 
 interface Balance {
@@ -23,6 +27,8 @@ interface Balance {
 }
 
 export default function AccountInfo() {
+  const { toast } = useToast();
+
   // Fetch account balance
   const { data: balanceData, isLoading: balanceLoading, error: balanceError } = useQuery<{ success: boolean; data: Balance }>({
     queryKey: ['/api/account/balance'],
@@ -33,6 +39,32 @@ export default function AccountInfo() {
   const { data: positionsData, isLoading: positionsLoading } = useQuery<{ success: boolean; data: Position[] }>({
     queryKey: ['/api/account/positions'],
     refetchInterval: 3000, // Refresh every 3 seconds
+  });
+
+  // Close position mutation
+  const closePositionMutation = useMutation({
+    mutationFn: async ({ symbol, side }: { symbol: string; side: 'LONG' | 'SHORT' }) => {
+      return await apiRequest('/api/account/close-position', {
+        method: 'POST',
+        body: JSON.stringify({ symbol, side }),
+        headers: { 'Content-Type': 'application/json' },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/account/positions'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/account/balance'] });
+      toast({
+        title: "Position Closed",
+        description: "Your position has been closed successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message || "Failed to close position",
+      });
+    },
   });
 
   const balance = balanceData?.data;
@@ -137,36 +169,57 @@ export default function AccountInfo() {
                 const entryPrice = parseFloat(position.entryPrice);
                 const markPrice = parseFloat(position.markPrice);
                 const pnlPercent = ((markPrice - entryPrice) / entryPrice * 100) * (isLong ? 1 : -1);
+                const positionValue = Math.abs(posAmt) * markPrice;
+                const marginType = position.isolated ? 'Isolated' : 'Cross';
 
                 return (
                   <div 
                     key={idx} 
-                    className="p-3 rounded-md border bg-card/50 space-y-2"
+                    className="p-3 rounded-md border bg-card/50 space-y-3"
                     data-testid={`position-${position.symbol}`}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="font-bold font-mono">{position.symbol}</span>
-                        <Badge variant={isLong ? "default" : "secondary"} className="text-xs">
+                        <Badge variant={isLong ? "default" : "destructive"} className="text-xs">
                           {isLong ? 'LONG' : 'SHORT'} {position.leverage}x
                         </Badge>
+                        <Badge variant="outline" className="text-xs">
+                          {marginType}
+                        </Badge>
                       </div>
-                      <div className={`text-sm font-bold font-mono ${
-                        pnl > 0 ? 'text-green-500' : pnl < 0 ? 'text-red-500' : ''
-                      }`}>
-                        {pnl >= 0 ? '+' : ''}{pnl.toFixed(2)} USDT ({pnlPercent >= 0 ? '+' : ''}{pnlPercent.toFixed(2)}%)
-                      </div>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => closePositionMutation.mutate({ 
+                          symbol: position.symbol, 
+                          side: isLong ? 'LONG' : 'SHORT' 
+                        })}
+                        disabled={closePositionMutation.isPending}
+                        data-testid={`button-close-${position.symbol}`}
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
                     </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
+                    <div className={`text-sm font-bold font-mono ${
+                      pnl > 0 ? 'text-green-500' : pnl < 0 ? 'text-red-500' : ''
+                    }`}>
+                      {pnl >= 0 ? '+' : ''}{pnl.toFixed(2)} USDT ({pnlPercent >= 0 ? '+' : ''}{pnlPercent.toFixed(2)}%)
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                       <div>
                         <div className="text-muted-foreground">Size</div>
                         <div className="font-mono">{Math.abs(posAmt).toFixed(4)}</div>
                       </div>
                       <div>
+                        <div className="text-muted-foreground">Value (USD)</div>
+                        <div className="font-mono">${positionValue.toFixed(2)}</div>
+                      </div>
+                      <div>
                         <div className="text-muted-foreground">Entry Price</div>
                         <div className="font-mono">${formatCryptoPrice(entryPrice)}</div>
                       </div>
-                      <div className="col-span-2 sm:col-span-1">
+                      <div>
                         <div className="text-muted-foreground">Mark Price</div>
                         <div className="font-mono">${formatCryptoPrice(markPrice)}</div>
                       </div>
