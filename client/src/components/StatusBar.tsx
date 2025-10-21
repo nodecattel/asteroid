@@ -1,6 +1,9 @@
-import { Activity, Pause, Play, Settings } from "lucide-react";
+import { Activity, Pause, Play, Settings, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import { queryClient } from "@/lib/queryClient";
 
 interface StatusBarProps {
   botStatus: "running" | "paused" | "stopped" | "error";
@@ -121,8 +124,40 @@ export default function StatusBar({
           >
             <Settings className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           </Button>
+          <LogoutButton />
         </div>
       </div>
     </div>
+  );
+}
+
+function LogoutButton() {
+  const { toast } = useToast();
+
+  const handleLogout = async () => {
+    try {
+      await apiRequest('POST', '/api/auth/logout');
+      queryClient.clear();
+      window.location.href = '/';
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to logout",
+        variant: "destructive",
+      });
+    }
+  };
+
+  return (
+    <Button
+      size="icon"
+      variant="ghost"
+      onClick={handleLogout}
+      data-testid="button-logout"
+      className="h-8 w-8"
+      title="Logout"
+    >
+      <LogOut className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+    </Button>
   );
 }
