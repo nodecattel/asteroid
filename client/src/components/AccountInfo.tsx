@@ -165,7 +165,9 @@ export default function AccountInfo() {
                 const entryPrice = parseFloat(position.entryPrice);
                 const markPrice = parseFloat(position.markPrice);
                 const pnlPercent = ((markPrice - entryPrice) / entryPrice * 100) * (isLong ? 1 : -1);
-                const positionValue = Math.abs(posAmt) * markPrice;
+                const positionValue = Math.abs(posAmt) * markPrice; // Notional value
+                const leverage = parseFloat(position.leverage);
+                const marginUsed = positionValue / leverage; // Margin used
                 const marginType = position.isolated ? 'Isolated' : 'Cross';
 
                 return (
@@ -202,14 +204,18 @@ export default function AccountInfo() {
                     }`}>
                       {pnl >= 0 ? '+' : ''}{pnl.toFixed(2)} USDT ({pnlPercent >= 0 ? '+' : ''}{pnlPercent.toFixed(2)}%)
                     </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
                       <div>
                         <div className="text-muted-foreground">Size</div>
                         <div className="font-mono">{Math.abs(posAmt).toFixed(4)}</div>
                       </div>
                       <div>
-                        <div className="text-muted-foreground">Value (USD)</div>
-                        <div className="font-mono">${positionValue.toFixed(2)}</div>
+                        <div className="text-muted-foreground">Notional (USD)</div>
+                        <div className="font-mono" data-testid={`text-notional-${position.symbol}`}>${positionValue.toFixed(2)}</div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground">Margin Used (USD)</div>
+                        <div className="font-mono" data-testid={`text-margin-${position.symbol}`}>${marginUsed.toFixed(2)}</div>
                       </div>
                       <div>
                         <div className="text-muted-foreground">Entry Price</div>
