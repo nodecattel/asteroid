@@ -657,10 +657,14 @@ export class BotEngine extends EventEmitter {
       timestamp: new Date().toISOString(),
     });
 
+    // Calculate realized P&L after each trade
+    const currentPnL = await storage.calculateRealizedPnL(this.botId);
+
     await storage.updateBotStats(this.botId, {
       totalVolume: stats.totalVolume + volume,
       totalTrades: stats.totalTrades + 1,
       totalFees: stats.totalFees + commission,
+      currentPnL,
     });
 
     // Update position tracking (NEW)
@@ -1044,16 +1048,17 @@ export class BotEngine extends EventEmitter {
       const filledOrders = allOrders.filter(o => o.status === 'FILLED').length;
       const fillRate = totalOrders > 0 ? (filledOrders / totalOrders) * 100 : 0;
 
-      // Calculate hourly volume
+      // Calculate hourly volume (actual trades from last hour)
       const hourlyVolume = await this.calculateHourlyVolume();
 
-      // Update stats
+      // Update stats with real hourly volume
       await storage.updateBotStats(this.botId, {
         sessionUptime: uptime,
         fillRate,
+        hourlyVolume, // Store actual hourly volume from exchange
       });
 
-      // Store hourly volume
+      // Store hourly volume for charting
       if (hourlyVolume > 0) {
         const now = new Date();
         const hourKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}-${String(now.getHours()).padStart(2, '0')}`;
