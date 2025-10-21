@@ -10,6 +10,7 @@ import VolumeChart, { HourlyData } from "@/components/VolumeChart";
 import ConfigPanel from "@/components/ConfigPanel";
 import BotSelector from "@/components/BotSelector";
 import AccountInfo from "@/components/AccountInfo";
+import MarketPairs from "@/components/MarketPairs";
 import Footer from "@/components/Footer";
 import { DollarSign, Activity, TrendingUp, Clock, Zap, Target } from "lucide-react";
 import type { BotInstance, BotStats } from "@shared/schema";
@@ -188,6 +189,9 @@ export default function Dashboard() {
       <div className="flex-1 max-w-[1600px] mx-auto w-full px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
         {/* Account Information */}
         <AccountInfo />
+
+        {/* Market Pairs Overview */}
+        <MarketPairs />
 
         {/* Bot Selector */}
         <BotSelector
