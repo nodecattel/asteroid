@@ -12,6 +12,7 @@ import BotSelector from "@/components/BotSelector";
 import AccountInfo from "@/components/AccountInfo";
 import MarketPairs from "@/components/MarketPairs";
 import Footer from "@/components/Footer";
+import TradesHistory, { Trade } from "@/components/TradesHistory";
 import { DollarSign, Activity, TrendingUp, Clock, Zap, Target } from "lucide-react";
 import type { BotInstance, BotStats } from "@shared/schema";
 
@@ -42,6 +43,13 @@ export default function Dashboard() {
     refetchInterval: 2000,
   });
 
+  // Fetch bot trade history
+  const { data: tradesData } = useQuery({
+    queryKey: ['/api/bots', selectedBotId, 'trades'],
+    enabled: !!selectedBotId,
+    refetchInterval: 3000,
+  });
+
   // Setup WebSocket listeners
   useEffect(() => {
     const socket = getSocket();
@@ -65,10 +73,17 @@ export default function Dashboard() {
       }
     });
 
+    socket.on('orderUpdated', (data: any) => {
+      if (data.botId === selectedBotId) {
+        queryClient.invalidateQueries({ queryKey: ['/api/bots', selectedBotId, 'trades'] });
+      }
+    });
+
     return () => {
       socket.off('statsUpdated');
       socket.off('activityLog');
       socket.off('orderPlaced');
+      socket.off('orderUpdated');
     };
   }, [selectedBotId]);
 
@@ -131,6 +146,19 @@ export default function Dashboard() {
     volume: hv.volume,
     target: hv.target,
   }));
+
+  const trades: Trade[] = ((tradesData as any)?.data?.trades || []).map((t: any) => ({
+    id: t.id,
+    timestamp: t.timestamp,
+    side: t.side,
+    price: t.price,
+    quantity: t.quantity,
+    quoteQuantity: t.quoteQuantity,
+    commission: t.commission,
+    realizedPnl: t.realizedPnl,
+  }));
+
+  const totalPnL = ((tradesData as any)?.data?.realizedPnL || 0);
 
   const config = selectedBot ? [
     { label: "Market", value: selectedBot.config.marketSymbol, category: "Trading" },
@@ -255,6 +283,16 @@ export default function Dashboard() {
                   Recent Orders
                 </h2>
                 <OrdersTable orders={orders} onCancelOrder={handleCancelOrder} />
+              </div>
+            )}
+
+            {/* Trades History */}
+            {trades.length > 0 && (
+              <div className="space-y-3">
+                <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-1">
+                  Trade History
+                </h2>
+                <TradesHistory trades={trades} totalPnL={totalPnL} />
               </div>
             )}
 
