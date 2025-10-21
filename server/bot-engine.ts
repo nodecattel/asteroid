@@ -866,9 +866,35 @@ export class BotEngine extends EventEmitter {
         ? position.entryPrice * (1 + this.config.takeProfitPercent / 100) // LONG: higher price
         : position.entryPrice * (1 - this.config.takeProfitPercent / 100); // SHORT: lower price
 
+      // Validate TP/SL positions are correct
+      if (position.side === 'LONG') {
+        if (stopLossPrice >= position.entryPrice) {
+          console.error(`[Bot ${this.botId}] ERROR: LONG SL price ${stopLossPrice} is not below entry ${position.entryPrice}!`);
+          await this.addLog('error', `SL calculation error for LONG: SL should be below entry`);
+          return;
+        }
+        if (takeProfitPrice <= position.entryPrice) {
+          console.error(`[Bot ${this.botId}] ERROR: LONG TP price ${takeProfitPrice} is not above entry ${position.entryPrice}!`);
+          await this.addLog('error', `TP calculation error for LONG: TP should be above entry`);
+          return;
+        }
+      } else {
+        // SHORT position
+        if (stopLossPrice <= position.entryPrice) {
+          console.error(`[Bot ${this.botId}] ERROR: SHORT SL price ${stopLossPrice} is not above entry ${position.entryPrice}!`);
+          await this.addLog('error', `SL calculation error for SHORT: SL should be above entry`);
+          return;
+        }
+        if (takeProfitPrice >= position.entryPrice) {
+          console.error(`[Bot ${this.botId}] ERROR: SHORT TP price ${takeProfitPrice} is not below entry ${position.entryPrice}!`);
+          await this.addLog('error', `TP calculation error for SHORT: TP should be below entry`);
+          return;
+        }
+      }
+
       // Log calculated prices for debugging
-      console.log(`[Bot ${this.botId}] Protection orders for ${position.side} position:`);
-      console.log(`  Entry: ${position.entryPrice}, SL: ${stopLossPrice} (${position.side === 'LONG' ? 'lower' : 'higher'}), TP: ${takeProfitPrice} (${position.side === 'LONG' ? 'higher' : 'lower'})`);
+      console.log(`[Bot ${this.botId}] ✅ Protection orders for ${position.side} position validated:`);
+      console.log(`  Entry: ${position.entryPrice.toFixed(4)}, SL: ${stopLossPrice.toFixed(4)} (${position.side === 'LONG' ? 'below' : 'above'} entry, ${this.config.stopLossPercent}%), TP: ${takeProfitPrice.toFixed(4)} (${position.side === 'LONG' ? 'above' : 'below'} entry, ${this.config.takeProfitPercent}%)`);
 
       // Place Stop-Loss order (Layer 1)
       if (this.config.enableStopLoss) {
