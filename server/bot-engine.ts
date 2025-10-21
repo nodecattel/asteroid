@@ -836,13 +836,15 @@ export class BotEngine extends EventEmitter {
       const markPrice = this.marketData?.markPrice || position.entryPrice;
 
       // Calculate TP/SL prices
+      // LONG: SL below entry (lose money), TP above entry (make money)
+      // SHORT: SL above entry (lose money), TP below entry (make money)
       const stopLossPrice = position.side === 'LONG'
-        ? position.entryPrice * (1 - this.config.stopLossPercent / 100)
-        : position.entryPrice * (1 + this.config.stopLossPercent / 100);
+        ? position.entryPrice * (1 - this.config.stopLossPercent / 100)  // LONG: lower price
+        : position.entryPrice * (1 + this.config.stopLossPercent / 100); // SHORT: higher price
 
       const takeProfitPrice = position.side === 'LONG'
-        ? position.entryPrice * (1 + this.config.takeProfitPercent / 100)
-        : position.entryPrice * (1 - this.config.takeProfitPercent / 100);
+        ? position.entryPrice * (1 + this.config.takeProfitPercent / 100) // LONG: higher price
+        : position.entryPrice * (1 - this.config.takeProfitPercent / 100); // SHORT: lower price
 
       // Place Stop-Loss order (Layer 1)
       if (this.config.enableStopLoss) {
