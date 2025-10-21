@@ -13,6 +13,7 @@ A fully functional, feature-complete trading bot for the Asterdex cryptocurrency
 - 🛡️ **Risk Management** - ADL quantile, position risk, leverage monitoring
 - 📉 **Performance Analytics** - Trade history, income tracking, commission rates
 - 🎯 **Dynamic Markets** - Auto-fetched from exchange (cached for 5 min)
+- 🔐 **Password Authentication** - Dashboard protected with configurable password
 - 🐳 **Docker Support** - Easy deployment with Docker Compose
 - 🪐 **Setup Wizard** - asteroid.sh for streamlined first-time setup
 
@@ -75,36 +76,57 @@ Create a `.env` file with the following:
 PORT=5000
 
 # Session Secret (generate with: openssl rand -hex 32)
-SESSION_SECRET=your-secret-here
+SESSION_SECRET=your-session-secret-here
+
+# Bot Password Authentication (REQUIRED)
+# This password protects access to the dashboard
+BOT_PASSWORD=your-secure-password-here
+
+# Asterdex API Credentials (REQUIRED)
+# Get these from: https://asterdex.com/settings/api
+ASTERDEX_API_KEY=your-api-key-here
+ASTERDEX_API_SECRET=your-api-secret-here
 
 # Database (optional - uses in-memory by default)
 DATABASE_URL=postgresql://user:pass@localhost:5432/asterdex
 ```
 
+**Important**: 
+- `BOT_PASSWORD` is required to access the dashboard - choose a strong password
+- All bots share the same `ASTERDEX_API_KEY` and `ASTERDEX_API_SECRET` for security
+- API credentials are stored in environment variables, not in the database or UI
+
 ### Bot Configuration
 
-Bot-specific settings (API keys, trading pairs, strategies) are configured through the web dashboard when creating each bot.
+Bot-specific settings (trading pairs, leverage, strategies) are configured through the web dashboard when creating each bot. API credentials are centrally managed via environment variables for enhanced security.
 
 ## Usage
 
 ### Access the Dashboard
 
-Open your browser and navigate to:
-- Docker: `http://localhost:5000`
-- Replit: Click the preview URL
+1. Open your browser and navigate to:
+   - Docker: `http://localhost:5000`
+   - Replit: Click the preview URL
+
+2. **Login** with the password you set in `BOT_PASSWORD` environment variable
+
+3. You'll be redirected to the dashboard where you can manage your bots
 
 ### Create a Bot
 
 1. Click "New Bot" button
-2. Enter your Asterdex API credentials
-3. Select market pair from the dropdown (auto-populated from exchange)
-4. Configure trading parameters:
-   - Leverage (1-125x based on market)
-   - Investment amount
-   - Target volume
+2. Select market pair from the dropdown (auto-populated from exchange)
+3. Configure trading parameters:
+   - Leverage (1-300x based on market limits)
+   - Investment amount (total margin budget)
+   - Target volume and duration
    - Max loss limit
    - Spread and order configuration
-5. Click "Create Bot"
+   - Risk management (stop-loss, take-profit, trailing stops)
+   - Trading bias (neutral, long, or short)
+4. Click "Create Bot"
+
+The bot will automatically start trading immediately after creation.
 
 ### Monitor Performance
 
@@ -180,11 +202,13 @@ The bot utilizes 100% of the Asterdex API:
 
 ## Security
 
-- API credentials stored securely per bot
-- HMAC SHA256 request signing
-- Session management with secure cookies
-- Environment variable configuration
-- Rate limit protection
+- **Password Authentication**: Dashboard protected with `BOT_PASSWORD` environment variable
+- **Centralized API Credentials**: All bots use shared `ASTERDEX_API_KEY` and `ASTERDEX_API_SECRET` from environment variables
+- **No Data Leakage**: API credentials never stored in database or exposed in UI
+- **HMAC SHA256**: All Asterdex API requests are cryptographically signed
+- **Session Management**: Secure HttpOnly cookies prevent XSS attacks
+- **Rate Limit Protection**: Automatic request throttling and backoff
+- **HTTPS**: Automatic when deployed on Replit (published apps)
 
 ## Troubleshooting
 

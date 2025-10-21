@@ -106,6 +106,27 @@ create_env_file() {
     echo "Let's set up your environment variables..."
     echo ""
     
+    # Bot password for dashboard authentication
+    print_warning "Set a password to protect your bot dashboard"
+    print_info "This password will be required to access the web interface"
+    echo ""
+    read -sp "Enter bot dashboard password: " bot_password
+    echo ""
+    read -sp "Confirm bot dashboard password: " bot_password_confirm
+    echo ""
+    
+    if [ "$bot_password" != "$bot_password_confirm" ]; then
+        print_error "Passwords do not match"
+        exit 1
+    fi
+    
+    if [ -z "$bot_password" ]; then
+        print_error "Bot password is required to protect your dashboard"
+        exit 1
+    fi
+    
+    echo ""
+    
     # Asterdex API credentials
     print_warning "You need Asterdex API credentials to run the bot"
     print_info "Get them from: https://asterdex.com/settings/api"
@@ -154,6 +175,9 @@ PORT=$port
 # Session Secret (auto-generated)
 SESSION_SECRET=$session_secret
 
+# Bot Password Authentication
+BOT_PASSWORD=$bot_password
+
 # Asterdex API Credentials
 ASTERDEX_API_KEY=$api_key
 ASTERDEX_API_SECRET=$api_secret
@@ -163,9 +187,6 @@ DATABASE_URL=$database_url
 
 # PostgreSQL Password (only used if PostgreSQL is enabled)
 POSTGRES_PASSWORD=$postgres_password
-
-# Asterdex API Credentials
-# Note: API credentials are configured per bot in the web interface
 EOF
     
     print_success ".env file created successfully"
