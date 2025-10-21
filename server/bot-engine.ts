@@ -1138,6 +1138,18 @@ export class BotEngine extends EventEmitter {
     const updatedFields = Object.keys(updates).join(', ');
     await this.addLog('info', `Configuration updated: ${updatedFields}`);
     
+    // If bot is running, trigger immediate order refresh
+    if (this.status === 'running') {
+      await this.addLog('info', 'Refreshing orders with new configuration...');
+      // Cancel all existing orders and the bot will place new ones on next loop iteration
+      try {
+        await this.client.cancelAllOrders(this.config.marketSymbol);
+        await this.addLog('info', 'Existing orders canceled, new orders will be placed shortly');
+      } catch (error: any) {
+        await this.addLog('error', `Failed to cancel orders during config update: ${error.message}`);
+      }
+    }
+    
     // Emit event
     this.emit('configUpdated', { botId: this.botId, config: this.config });
   }
