@@ -22,6 +22,7 @@ The Asterdex Volume Generator Bot is a comprehensive trading application designe
 - 🐛 **CRITICAL: Tick Size Validation Fix**: Resolved "Price not increased by tick size" errors by extracting and using exchange-specific filters (PRICE_FILTER tickSize, LOT_SIZE stepSize, MIN_NOTIONAL minNotional) for every market pair, ensuring all order prices/quantities meet exchange requirements
 - ✅ **Bot Parameter Editing**: Running bots can now be edited via PATCH /api/bots/:botId/config endpoint - all parameters (investment, leverage, spread, TP/SL, trading bias, etc.) can be updated without stopping the bot
 - 🐛 **CRITICAL: Stop-Loss/Take-Profit Fix**: Fixed broken TP/SL logic that prevented positions from closing when hitting loss thresholds. Both LONG and SHORT positions now correctly trigger stop-loss at configured loss % and take-profit at configured profit %. Positions automatically close and restart with new orders.
+- ✅ **Auto-Close Positions on Stop**: When stopping a bot, all open positions are now automatically closed with market orders before canceling pending orders. This prevents lingering positions that could incur losses or funding fees.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
