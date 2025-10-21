@@ -61,9 +61,14 @@ docker-compose logs -f
 ## Quick Start on Replit
 
 1. Open in Replit
-2. Click "Run" button
-3. The application will start automatically
-4. Access the dashboard in the browser pane
+2. Set up your environment variables in Secrets:
+   - `BOT_PASSWORD` - Your dashboard password
+   - `ASTERDEX_API_KEY` - Get from https://www.asterdex.com/en/api-management
+   - `ASTERDEX_API_SECRET` - Get from https://www.asterdex.com/en/api-management
+   - `SESSION_SECRET` - Generate with `openssl rand -hex 32`
+3. Click "Run" button
+4. The application will start automatically
+5. Access the dashboard in the browser pane
 
 ## Configuration
 
@@ -83,7 +88,7 @@ SESSION_SECRET=your-session-secret-here
 BOT_PASSWORD=your-secure-password-here
 
 # Aster Dex API Credentials (REQUIRED)
-# Get these from: https://asterdex.com/settings/api
+# Get your API keys from: https://www.asterdex.com/en/api-management
 ASTERDEX_API_KEY=your-api-key-here
 ASTERDEX_API_SECRET=your-api-secret-here
 
@@ -95,7 +100,10 @@ DATABASE_URL=postgresql://user:pass@localhost:5432/asterdex
 - `BOT_PASSWORD` is required to access the dashboard - choose a strong password
 - All bots share the same `ASTERDEX_API_KEY` and `ASTERDEX_API_SECRET` for security
 - API credentials are stored in environment variables, not in the database or UI
-- Get your Aster Dex API credentials from: https://asterdex.com/settings/api
+- **Get your Aster Dex API keys from: https://www.asterdex.com/en/api-management**
+  - Each account can create up to 30 API keys
+  - Do not disclose your API Key to anyone to avoid asset losses
+  - Enable permissions for futures trading when creating the API key
 
 ### Bot Configuration
 

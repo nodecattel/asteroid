@@ -70,7 +70,7 @@ export default function Login() {
             </div>
             <CardTitle className="text-2xl font-bold">Astroid</CardTitle>
             <CardDescription>
-              Trading bot for Aster Dex - Enter password to access dashboard
+              Personal Trading bot for Aster Dex - Enter password to access dashboard
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -96,9 +96,18 @@ export default function Login() {
               >
                 {isLoading ? "Logging in..." : "Login"}
               </Button>
-              <p className="text-sm text-muted-foreground text-center mt-4">
-                Protected by password authentication. Password is configured in .env file.
-              </p>
+              <div className="text-sm text-muted-foreground text-center mt-4 space-y-1">
+                <p>Password is configured in .env file.</p>
+                <a 
+                  href="https://www.asterdex.com/en/api-management" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline inline-block"
+                  data-testid="link-api-management"
+                >
+                  Get API Keys from Aster Dex
+                </a>
+              </div>
             </form>
           </CardContent>
         </Card>

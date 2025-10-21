@@ -129,7 +129,7 @@ create_env_file() {
     
     # Aster Dex API credentials
     print_warning "You need Aster Dex API credentials to run the bot"
-    print_info "Get them from: https://asterdex.com/settings/api"
+    print_info "Get them from: https://www.asterdex.com/en/api-management"
     echo ""
     read -p "Enter your Aster Dex API Key: " api_key
     read -p "Enter your Aster Dex API Secret: " api_secret
