@@ -443,8 +443,17 @@ export class BotEngine extends EventEmitter {
           (totalBudget / totalOrdersPlanned) * this.config.leverage
         );
         
-        // Ensure we meet minimum notional requirements
-        const effectiveNotional = Math.max(finalOrderNotional, this.minNotional * 1.1); // 10% above minimum
+        // Calculate minimum notional needed to produce at least 1 step size unit
+        // This ensures quantity doesn't round to zero for high-priced assets
+        const minQuantityNeeded = this.stepSize;
+        const minNotionalForQuantity = minQuantityNeeded * referencePrice;
+        
+        // Use the largest of: calculated notional, exchange min notional, or notional needed for valid quantity
+        const effectiveNotional = Math.max(
+          finalOrderNotional,
+          this.minNotional * 1.1,  // 10% above exchange minimum
+          minNotionalForQuantity * 1.5  // 50% above minimum to ensure rounding works
+        );
         
         const rawQuantity = effectiveNotional / referencePrice;
         const quantity = this.formatQuantity(rawQuantity);
@@ -465,6 +474,12 @@ export class BotEngine extends EventEmitter {
           await this.addLog('error', `Order size too small (${finalNotionalCheck.toFixed(2)} USDT). Increase investment or reduce orders per side.`);
           await this.sleep(this.config.refreshInterval * 1000);
           continue;
+        }
+        
+        // Check if total margin required would exceed budget
+        const totalMarginNeeded = (effectiveNotional / this.config.leverage) * totalOrdersPlanned;
+        if (totalMarginNeeded > totalBudget * 1.1) { // Allow 10% tolerance
+          await this.addLog('warning', `⚠️ Orders require ${totalMarginNeeded.toFixed(2)} USDT margin but budget is ${totalBudget.toFixed(2)} USDT. Consider increasing investment or reducing orders/leverage.`);
         }
 
         // Use batch orders for efficiency
