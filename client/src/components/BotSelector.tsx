@@ -231,7 +231,7 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
 
   return (
     <div className="flex items-center gap-3 flex-wrap">
-      <div className="flex-1 min-w-[200px]">
+      <div className="flex-1 min-w-0">
         <Select value={selectedBotId || undefined} onValueChange={onSelectBot}>
           <SelectTrigger data-testid="select-bot" className="font-mono">
             <SelectValue placeholder="Select a bot" />
@@ -330,16 +330,16 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
             New Bot
           </Button>
         </DialogTrigger>
-        <DialogContent className="max-w-[98vw] w-full sm:max-w-3xl lg:max-w-5xl max-h-[92vh] overflow-y-auto font-mono p-4 sm:p-6">
-          <DialogHeader>
-            <DialogTitle className="text-xl sm:text-2xl">Create New Trading Bot</DialogTitle>
-            <DialogDescription className="text-sm">
+        <DialogContent className="max-w-[96vw] w-full sm:max-w-3xl lg:max-w-5xl max-h-[92vh] overflow-y-auto overflow-x-hidden font-mono p-3 sm:p-6">
+          <DialogHeader className="pr-8">
+            <DialogTitle className="text-lg sm:text-xl lg:text-2xl">Create New Trading Bot</DialogTitle>
+            <DialogDescription className="text-xs sm:text-sm">
               Configure your automated volume generation bot for Asterdex perpetual futures
             </DialogDescription>
           </DialogHeader>
           
           <TooltipProvider>
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {/* Market Selection Section - Full Width */}
               <Card>
                 <CardHeader className="pb-3">
@@ -375,26 +375,26 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
                         ) : (
                           availableMarkets.map((market) => (
                             <SelectItem key={market.symbol} value={market.symbol}>
-                              <div className="flex items-center justify-between w-full gap-4 py-2">
-                                <div className="flex items-center gap-3 flex-1">
-                                  <span className="font-bold text-base">{market.symbol}</span>
+                              <div className="flex items-center justify-between w-full gap-2 py-2">
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                  <span className="font-bold text-sm sm:text-base truncate">{market.symbol}</span>
                                   {market.maxLeverage && (
-                                    <Badge variant="secondary" className="text-xs">
-                                      Max {market.maxLeverage}x
+                                    <Badge variant="secondary" className="text-xs shrink-0">
+                                      {market.maxLeverage}x
                                     </Badge>
                                   )}
                                   {market.priceChangePercent24h !== undefined && market.priceChangePercent24h !== null && (
-                                    <span className={`text-sm font-semibold ${market.priceChangePercent24h >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                                    <span className={`text-xs sm:text-sm font-semibold shrink-0 ${market.priceChangePercent24h >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                                       {market.priceChangePercent24h >= 0 ? '+' : ''}{market.priceChangePercent24h.toFixed(2)}%
                                     </span>
                                   )}
                                 </div>
-                                <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                <div className="hidden sm:flex items-center gap-3 text-sm text-muted-foreground shrink-0">
                                   {market.quoteVolume24h > 0 && (
-                                    <span className="font-medium">Vol: <span className="text-foreground">${formatVolume(market.quoteVolume24h)}</span></span>
+                                    <span className="font-medium whitespace-nowrap">Vol: <span className="text-foreground">${formatVolume(market.quoteVolume24h)}</span></span>
                                   )}
                                   {market.lastPrice > 0 && (
-                                    <span className="font-medium">Price: <span className="text-foreground">${market.lastPrice.toFixed(market.pricePrecision)}</span></span>
+                                    <span className="font-medium whitespace-nowrap">Price: <span className="text-foreground">${market.lastPrice.toFixed(market.pricePrecision)}</span></span>
                                   )}
                                 </div>
                               </div>
@@ -417,7 +417,7 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
                   <CardDescription>Set leverage and capital allocation</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
@@ -486,7 +486,7 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
                   <CardDescription>Define trading volume goals and risk limits</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <Label htmlFor="targetVolume">Target Volume</Label>
@@ -569,7 +569,7 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
                           <Label htmlFor="firstOrderSpreadBps">First Order Spread (bps)</Label>
@@ -667,7 +667,7 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
 
                     <Separator className="my-4" />
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
                           <Label htmlFor="tradingBias">Trading Bias</Label>
@@ -737,7 +737,7 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
                 <CardContent>
                   <div className="space-y-4">
                     {/* Stop-Loss & Take-Profit */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
                           <Label htmlFor="stopLossPercent">Stop-Loss (%)</Label>
@@ -942,9 +942,9 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
 
       {/* Edit Bot Dialog - Same as Create but with disabled market selector and update mutation */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="max-w-[98vw] w-full sm:max-w-3xl lg:max-w-5xl max-h-[92vh] overflow-y-auto font-mono p-4 sm:p-6">
-          <DialogHeader>
-            <DialogTitle className="text-xl sm:text-2xl">Edit Bot Configuration</DialogTitle>
+        <DialogContent className="max-w-[96vw] w-full sm:max-w-3xl lg:max-w-5xl max-h-[92vh] overflow-y-auto overflow-x-hidden font-mono p-3 sm:p-6">
+          <DialogHeader className="pr-8">
+            <DialogTitle className="text-lg sm:text-xl lg:text-2xl">Edit Bot Configuration</DialogTitle>
             <DialogDescription className="text-sm">
               Modify parameters for {selectedBotData?.marketSymbol} bot (running bots will apply changes immediately)
             </DialogDescription>
@@ -980,7 +980,7 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
                   <CardDescription>Set leverage and capital allocation</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
@@ -1047,7 +1047,7 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
                   <CardDescription>Essential trading and risk parameters</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="edit-spread">Spread (bps)</Label>
                       <Input
