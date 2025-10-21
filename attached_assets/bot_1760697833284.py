@@ -28,7 +28,7 @@ class VolumeGeneratorBot:
         
         # ===== Market & Trading Settings =====
         self.market_index = int(os.getenv('MARKET_INDEX', 1))
-        self.leverage = int(os.getenv('LEVERAGE', 10))
+        self.leverage = int(os.getenv('LEVERAGE', 5))
         self.investment = float(os.getenv('INVESTMENT_USDT', 10))
         
         # ===== Volume Target Settings =====
@@ -37,8 +37,8 @@ class VolumeGeneratorBot:
         self.target_hours = int(os.getenv('TARGET_HOURS', 24))
         
         # ===== Strategy Parameters =====
-        self.spread_bps = float(os.getenv('SPREAD_BPS', 2))
-        self.orders_per_side = int(os.getenv('ORDERS_PER_SIDE', 10))
+        self.spread_bps = float(os.getenv('SPREAD_BPS', 5))
+        self.orders_per_side = int(os.getenv('ORDERS_PER_SIDE', 3))
         self.order_size_percent = float(os.getenv('ORDER_SIZE_PERCENT', 0.1))
         self.refresh_interval = float(os.getenv('REFRESH_INTERVAL', 2.0))
         
@@ -76,7 +76,7 @@ class VolumeGeneratorBot:
         self.hourly_stats = []
 
         self.test_orderbook()
-	
+        
         # Symbol precision info
         self.price_precision = 2
         self.quantity_precision = 6
@@ -146,8 +146,8 @@ class VolumeGeneratorBot:
             return 8, 8  # ค่า default
 
     def get_symbol_info(self):
-    	"""Get symbol precision from Asterdex exchangeInfo"""
-    	try:
+        """Get symbol precision from Asterdex exchangeInfo"""
+        try:
             url = f"{self.base_url}/fapi/v1/exchangeInfo"
             response = requests.get(url, timeout=5)
             data = response.json()
@@ -171,7 +171,7 @@ class VolumeGeneratorBot:
                 print(f"⚠️ Symbol {self.market_symbol} not found in exchangeInfo")
                 return False
         
-    	except Exception as e:
+        except Exception as e:
             print(f"⚠️ Error fetching symbol info: {e}")
             return False
 

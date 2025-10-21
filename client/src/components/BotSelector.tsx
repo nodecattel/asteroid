@@ -56,13 +56,13 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot }: BotSel
 
   const [formData, setFormData] = useState({
     marketSymbol: '',
-    leverage: 10,
+    leverage: 5,
     investmentUsdt: 10,
     targetVolume: 100000,
     maxLoss: 10,
     targetHours: 24,
-    spreadBps: 2,
-    ordersPerSide: 10,
+    spreadBps: 5,
+    ordersPerSide: 3,
     orderSizePercent: 25,
     refreshInterval: 2.0,
     tradingBias: 'neutral' as 'neutral' | 'long' | 'short',
@@ -105,7 +105,7 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot }: BotSel
     if (selectedMarket?.maxLeverage && formData.leverage > selectedMarket.maxLeverage) {
       setFormData(prev => ({
         ...prev,
-        leverage: selectedMarket.maxLeverage || 10,
+        leverage: selectedMarket.maxLeverage || 5,
       }));
     }
   }, [formData.marketSymbol, selectedMarket?.maxLeverage]);
