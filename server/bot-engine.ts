@@ -716,12 +716,12 @@ export class BotEngine extends EventEmitter {
         // Check manual TP/SL and circuit breaker (Layer 2 protection)
         await this.checkManualTPSL();
 
-        // Wait before next refresh
-        await this.sleep(this.config.refreshInterval * 1000);
+        // Wait before next cycle (using configurable cycle time)
+        await this.sleep(this.config.cycleTimeSeconds * 1000);
 
       } catch (error: any) {
         await this.addLog('error', `Trading loop error: ${error.message}`);
-        await this.sleep(5000); // Wait 5s on error
+        await this.sleep(this.config.cycleTimeSeconds * 1000); // Wait cycle time on error
       }
     }
   }
