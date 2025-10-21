@@ -49,7 +49,7 @@ The frontend uses React and TypeScript with Vite, featuring a custom terminal-in
 - **Multi-Bot Management**: Supports running and monitoring multiple independent bot instances on different market pairs.
 - **Rate Limit Protection**: Implements request weight tracking, order count limits, automatic backoff, and request queuing.
 - **Password Authentication**: Implemented for all bot management and account endpoints.
-- **Dynamic Max Leverage**: Fetches and displays real-time max leverage from Aster Dex API for each market.
+- **Dynamic Max Leverage**: Fetches and displays real-time max leverage from Aster Dex API for each market. Automatically sets leverage on the exchange when bot starts or when leverage is updated.
 - **Budget Warning System**: Validates order sizes against total budget.
 - **Auto-Start Feature**: Bots automatically start trading after creation.
 - **Bot Parameter Editing**: Running bots can be edited without stopping them.

@@ -268,6 +268,15 @@ export class BotEngine extends EventEmitter {
     await storage.updateBotInstance(this.botId, { status: 'running' });
     await this.addLog('info', 'Bot started');
 
+    // Set leverage on exchange for this symbol
+    try {
+      await this.client.changeLeverage(this.config.marketSymbol, this.config.leverage);
+      await this.addLog('success', `Leverage set to ${this.config.leverage}x on ${this.config.marketSymbol}`);
+    } catch (error: any) {
+      const errorMsg = error.response?.data?.msg || error.message;
+      await this.addLog('warning', `Failed to set leverage: ${errorMsg} (will use existing leverage)`);
+    }
+
     // Fetch initial market data and risk metrics
     await this.updateMarketData();
     await this.updateRiskMetrics();
@@ -1240,6 +1249,17 @@ export class BotEngine extends EventEmitter {
     // Log the update
     const updatedFields = Object.keys(updates).join(', ');
     await this.addLog('info', `Configuration updated: ${updatedFields}`);
+    
+    // If leverage was changed, update it on the exchange
+    if (updates.leverage !== undefined && this.status === 'running') {
+      try {
+        await this.client.changeLeverage(this.config.marketSymbol, this.config.leverage);
+        await this.addLog('success', `Leverage updated to ${this.config.leverage}x on ${this.config.marketSymbol}`);
+      } catch (error: any) {
+        const errorMsg = error.response?.data?.msg || error.message;
+        await this.addLog('warning', `Failed to update leverage: ${errorMsg}`);
+      }
+    }
     
     // If bot is running, trigger immediate order refresh
     if (this.status === 'running') {
