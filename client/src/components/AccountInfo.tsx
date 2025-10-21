@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Wallet, TrendingUp, TrendingDown, DollarSign } from "lucide-react";
+import { formatCryptoPrice } from "@/lib/utils";
 
 interface Position {
   symbol: string;
@@ -163,11 +164,11 @@ export default function AccountInfo() {
                       </div>
                       <div>
                         <div className="text-muted-foreground">Entry Price</div>
-                        <div className="font-mono">${entryPrice.toFixed(2)}</div>
+                        <div className="font-mono">${formatCryptoPrice(entryPrice)}</div>
                       </div>
                       <div className="col-span-2 sm:col-span-1">
                         <div className="text-muted-foreground">Mark Price</div>
-                        <div className="font-mono">${markPrice.toFixed(2)}</div>
+                        <div className="font-mono">${formatCryptoPrice(markPrice)}</div>
                       </div>
                     </div>
                   </div>

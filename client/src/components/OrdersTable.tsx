@@ -1,6 +1,7 @@
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { formatCryptoPrice } from "@/lib/utils";
 
 export interface Order {
   id: string;
@@ -63,7 +64,7 @@ export default function OrdersTable({ orders, onCancelOrder }: OrdersTableProps)
                   </Badge>
                 </td>
                 <td className="px-4 py-2 text-sm font-mono text-right tabular-nums">
-                  ${typeof order.price === 'string' ? parseFloat(order.price).toFixed(2) : order.price.toFixed(2)}
+                  ${formatCryptoPrice(typeof order.price === 'string' ? parseFloat(order.price) : order.price)}
                 </td>
                 <td className="px-4 py-2 text-sm font-mono text-right tabular-nums">
                   {typeof order.quantity === 'string' ? parseFloat(order.quantity).toFixed(4) : order.quantity.toFixed(4)}

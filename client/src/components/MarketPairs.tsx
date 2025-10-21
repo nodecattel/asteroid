@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Search, Star, ArrowUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { formatCryptoPrice } from "@/lib/utils";
 
 interface Market {
   symbol: string;
@@ -149,12 +150,6 @@ export default function MarketPairs() {
     return num.toFixed(2);
   };
 
-  const formatPrice = (price: number, precision: number) => {
-    return price.toLocaleString('en-US', {
-      minimumFractionDigits: Math.min(precision, 2),
-      maximumFractionDigits: precision
-    });
-  };
 
   const formatFundingRate = (rate: number | undefined) => {
     if (rate === undefined || rate === null) return 'N/A';
@@ -347,7 +342,7 @@ export default function MarketPairs() {
                         {/* Last Price */}
                         <div className="col-span-3 lg:col-span-3 text-right">
                           <span className="font-mono text-sm" data-testid={`text-price-${market.symbol}`}>
-                            {formatPrice(market.lastPrice, market.pricePrecision)}
+                            {formatCryptoPrice(market.lastPrice, market.pricePrecision)}
                           </span>
                         </div>
 
@@ -412,7 +407,7 @@ export default function MarketPairs() {
                         {/* Price + 24h Change */}
                         <div className="col-span-6 text-right">
                           <div className="font-mono text-xs mb-0.5">
-                            {formatPrice(market.lastPrice, market.pricePrecision)}
+                            {formatCryptoPrice(market.lastPrice, market.pricePrecision)}
                           </div>
                           <div
                             className={`font-mono text-xs font-medium ${
