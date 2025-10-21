@@ -16,7 +16,8 @@ export const botConfigSchema = z.object({
   targetHours: z.number().int().positive(),
   
   // Strategy Parameters
-  spreadBps: z.number().positive(),
+  firstOrderSpreadBps: z.number().positive().default(5), // Spread from current price to first buy/sell order
+  orderSpacingBps: z.number().positive().default(2), // Spread between subsequent orders
   ordersPerSide: z.number().int().positive(),
   orderSizePercent: z.number().positive(),
   refreshInterval: z.number().min(30).default(60), // Minimum 30s to allow orders to fill
