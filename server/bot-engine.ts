@@ -440,21 +440,53 @@ export class BotEngine extends EventEmitter {
         
         // Smart order management: Only cancel if price has moved significantly
         let shouldCancelOrders = false;
+        let shouldPlaceOrders = false;
+        
+        // Calculate expected order count based on trading bias
+        let expectedBuyOrders = this.config.ordersPerSide;
+        let expectedSellOrders = this.config.ordersPerSide;
+        
+        if (this.config.tradingBias === 'long') {
+          const totalOrders = this.config.ordersPerSide * 2;
+          expectedBuyOrders = Math.round((totalOrders * this.config.longBiasPercent) / 100);
+          expectedSellOrders = totalOrders - expectedBuyOrders;
+        } else if (this.config.tradingBias === 'short') {
+          const totalOrders = this.config.ordersPerSide * 2;
+          expectedSellOrders = Math.round((totalOrders * this.config.longBiasPercent) / 100);
+          expectedBuyOrders = totalOrders - expectedSellOrders;
+        } else if (this.config.longBiasPercent !== 50) {
+          const totalOrders = this.config.ordersPerSide * 2;
+          expectedBuyOrders = Math.round((totalOrders * this.config.longBiasPercent) / 100);
+          expectedSellOrders = totalOrders - expectedBuyOrders;
+        }
+        
+        const totalExpectedOrders = expectedBuyOrders + expectedSellOrders;
+        const currentBuyOrders = limitOrders.filter((o: any) => o.side === 'BUY').length;
+        const currentSellOrders = limitOrders.filter((o: any) => o.side === 'SELL').length;
+        const currentTotalOrders = limitOrders.length;
         
         if (this.lastOrderPrice === 0) {
           // First iteration - no previous orders
-          shouldCancelOrders = true;
-          console.log(`[Bot ${this.botId}] 🆕 First iteration - will place initial orders`);
+          shouldCancelOrders = false;
+          shouldPlaceOrders = true;
+          console.log(`[Bot ${this.botId}] 🆕 First iteration - will place initial ${totalExpectedOrders} orders`);
         } else {
           const priceChange = Math.abs(referencePrice - this.lastOrderPrice) / this.lastOrderPrice;
           const threshold = Math.max(this.priceDeviationThreshold, this.config.firstOrderSpreadBps / 10000);
           
           if (priceChange > threshold) {
             shouldCancelOrders = true;
-            console.log(`[Bot ${this.botId}] 📊 Price moved ${(priceChange * 100).toFixed(2)}% (threshold: ${(threshold * 100).toFixed(2)}%) - cancelling orders`);
+            shouldPlaceOrders = true;
+            console.log(`[Bot ${this.botId}] 📊 Price moved ${(priceChange * 100).toFixed(2)}% (threshold: ${(threshold * 100).toFixed(2)}%) - will cancel and replace ${currentTotalOrders} orders`);
+          } else if (currentTotalOrders < totalExpectedOrders) {
+            // Price is stable BUT we're missing some orders (filled or cancelled externally)
+            shouldCancelOrders = true; // Cancel all to replace with full set around current price
+            shouldPlaceOrders = true;
+            console.log(`[Bot ${this.botId}] 🔄 Price stable but missing orders: have ${currentTotalOrders}/${totalExpectedOrders} (${currentBuyOrders} BUY, ${currentSellOrders} SELL) - will replace all`);
           } else {
             shouldCancelOrders = false;
-            console.log(`[Bot ${this.botId}] ✅ Price stable (${(priceChange * 100).toFixed(3)}% change) - keeping ${limitOrders.length} orders alive`);
+            shouldPlaceOrders = false;
+            console.log(`[Bot ${this.botId}] ✅ Price stable (${(priceChange * 100).toFixed(3)}% change) - keeping ${currentTotalOrders} orders alive (${currentBuyOrders} BUY, ${currentSellOrders} SELL)`);
           }
         }
         
@@ -471,8 +503,10 @@ export class BotEngine extends EventEmitter {
           }
           
           await this.sleep(this.config.delayAfterCancel * 1000);
-        } else if (!shouldCancelOrders) {
-          // Skip order placement if we're keeping existing orders
+        }
+        
+        if (!shouldPlaceOrders) {
+          // Skip order placement - all orders are in place and price is stable
           await this.sleep(this.config.refreshInterval * 1000);
           continue;
         }
@@ -535,30 +569,18 @@ export class BotEngine extends EventEmitter {
           await this.addLog('info', `✅ High margin utilization: ${utilizationPercent.toFixed(1)}% of ${totalBudget.toFixed(2)} USDT budget`);
         }
 
-        // Calculate order distribution based on tradingBias and longBiasPercent
-        let buyOrderCount = this.config.ordersPerSide;
-        let sellOrderCount = this.config.ordersPerSide;
+        // Use pre-calculated order distribution (already calculated above)
+        let buyOrderCount = expectedBuyOrders;
+        let sellOrderCount = expectedSellOrders;
         
         if (this.config.tradingBias === 'long') {
-          // Long bias: Use longBiasPercent for buy orders
-          const totalOrders = this.config.ordersPerSide * 2;
-          buyOrderCount = Math.round((totalOrders * this.config.longBiasPercent) / 100);
-          sellOrderCount = totalOrders - buyOrderCount;
-          console.log(`[Bot ${this.botId}] 📈 LONG bias active: ${buyOrderCount} buy orders, ${sellOrderCount} sell orders (${this.config.longBiasPercent}% long)`);
+          console.log(`[Bot ${this.botId}] 📈 LONG bias active: placing ${buyOrderCount} buy orders, ${sellOrderCount} sell orders (${this.config.longBiasPercent}% long)`);
         } else if (this.config.tradingBias === 'short') {
-          // Short bias: Invert longBiasPercent for sell orders
-          const totalOrders = this.config.ordersPerSide * 2;
-          sellOrderCount = Math.round((totalOrders * this.config.longBiasPercent) / 100);
-          buyOrderCount = totalOrders - sellOrderCount;
-          console.log(`[Bot ${this.botId}] 📉 SHORT bias active: ${buyOrderCount} buy orders, ${sellOrderCount} sell orders (${this.config.longBiasPercent}% short)`);
+          console.log(`[Bot ${this.botId}] 📉 SHORT bias active: placing ${buyOrderCount} buy orders, ${sellOrderCount} sell orders (${this.config.longBiasPercent}% short)`);
         } else if (this.config.longBiasPercent !== 50) {
-          // Neutral with custom bias percentage
-          const totalOrders = this.config.ordersPerSide * 2;
-          buyOrderCount = Math.round((totalOrders * this.config.longBiasPercent) / 100);
-          sellOrderCount = totalOrders - buyOrderCount;
-          console.log(`[Bot ${this.botId}] ⚖️ Custom bias: ${buyOrderCount} buy orders, ${sellOrderCount} sell orders (${this.config.longBiasPercent}% long)`);
+          console.log(`[Bot ${this.botId}] ⚖️ Custom bias: placing ${buyOrderCount} buy orders, ${sellOrderCount} sell orders (${this.config.longBiasPercent}% long)`);
         } else {
-          console.log(`[Bot ${this.botId}] ⚖️ Neutral bias: ${buyOrderCount} buy orders, ${sellOrderCount} sell orders (50/50)`);
+          console.log(`[Bot ${this.botId}] ⚖️ Neutral bias: placing ${buyOrderCount} buy orders, ${sellOrderCount} sell orders (50/50)`);
         }
 
         // Use batch orders for efficiency
@@ -648,6 +670,10 @@ export class BotEngine extends EventEmitter {
           });
         }
 
+        // Track order placement statistics
+        let successfulOrders = 0;
+        let failedOrders = 0;
+        
         // Place batch orders (up to 5 at a time per API limit)
         const maxBatchSize = 5;
         for (let i = 0; i < batchOrders.length; i += maxBatchSize) {
@@ -658,7 +684,6 @@ export class BotEngine extends EventEmitter {
           try {
             const batchResponse = await this.client.placeBatchOrders(batch);
             console.log(`[Bot ${this.botId}] Batch order response:`, JSON.stringify(batchResponse).substring(0, 200));
-            await this.addLog('info', `Placed ${batch.length} orders on exchange`);
             
             // Update order statuses with exchange order IDs
             if (Array.isArray(batchResponse)) {
@@ -670,9 +695,11 @@ export class BotEngine extends EventEmitter {
                     exchangeOrderId: orderResp.orderId?.toString()
                   });
                   console.log(`[Bot ${this.botId}] Order ${batch[idx].newClientOrderId} placed: ID ${orderResp.orderId}`);
+                  successfulOrders++;
                 } else if (orderResp.code) {
                   await storage.updateOrderByClientId(batch[idx].newClientOrderId, { status: 'FAILED' });
                   await this.addLog('error', `Order ${idx + 1} failed: ${orderResp.msg}`);
+                  failedOrders++;
                 }
               }
             }
@@ -693,15 +720,23 @@ export class BotEngine extends EventEmitter {
                   status: 'NEW',
                   exchangeOrderId: singleResponse.orderId?.toString()
                 });
+                successfulOrders++;
                 await this.sleep(this.config.delayBetweenOrders * 1000);
               } catch (individualError: any) {
                 console.error(`[Bot ${this.botId}] Individual order error:`, individualError.message);
                 await this.addLog('error', `Failed to place ${order.side} order: ${individualError.message}`);
                 await storage.updateOrderByClientId(order.newClientOrderId, { status: 'FAILED' });
+                failedOrders++;
               }
             }
           }
         }
+
+        // Log order placement summary
+        const actualBuyOrders = batchOrders.filter(o => o.side === 'BUY').length;
+        const actualSellOrders = batchOrders.filter(o => o.side === 'SELL').length;
+        console.log(`[Bot ${this.botId}] ✅ Order placement complete: ${successfulOrders}/${batchOrders.length} successful (${actualBuyOrders} BUY, ${actualSellOrders} SELL), ${failedOrders} failed`);
+        await this.addLog('info', `Placed ${successfulOrders} orders around mark price ${referencePrice.toFixed(4)} (${actualBuyOrders} BUY, ${actualSellOrders} SELL)`);
 
         // Update last order price for smart order management
         this.lastOrderPrice = referencePrice;
