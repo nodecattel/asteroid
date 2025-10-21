@@ -407,17 +407,62 @@ export class BotEngine extends EventEmitter {
           await this.sleep(this.config.delayAfterCancel * 1000);
         }
 
-        // Calculate order size
-        const effectiveCapital = this.config.investmentUsdt * this.config.leverage;
-        const orderSize = (effectiveCapital * this.config.orderSizePercent) / 100;
-        const rawQuantity = orderSize / referencePrice;
+        // Calculate order size using total investment budget approach
+        // Total budget available for margin
+        const totalBudget = this.config.investmentUsdt;
+        
+        // Calculate how much notional value we want per order
+        // orderSizePercent now refers to % of total budget to use per order
+        const orderNotionalValue = (totalBudget * this.config.orderSizePercent) / 100;
+        
+        // With leverage, this notional value requires less margin
+        const marginRequiredPerOrder = orderNotionalValue / this.config.leverage;
+        
+        // Ensure margin required doesn't exceed budget
+        const totalOrdersPlanned = this.config.ordersPerSide * 2; // buy + sell sides
+        const totalMarginRequired = marginRequiredPerOrder * totalOrdersPlanned;
+        
+        if (totalMarginRequired > totalBudget) {
+          // Adjust order size to fit within budget
+          const adjustedMarginPerOrder = totalBudget / totalOrdersPlanned;
+          const adjustedNotional = adjustedMarginPerOrder * this.config.leverage;
+          const rawQuantity = adjustedNotional / referencePrice;
+          const quantity = this.formatQuantity(rawQuantity);
+          
+          console.log(`[Bot ${this.botId}] Budget-adjusted order: totalBudget=${totalBudget}, marginPerOrder=${adjustedMarginPerOrder.toFixed(2)}, notional=${adjustedNotional.toFixed(2)}, qty=${quantity}`);
+        } else {
+          const rawQuantity = orderNotionalValue / referencePrice;
+          const quantity = this.formatQuantity(rawQuantity);
+          
+          console.log(`[Bot ${this.botId}] Order calculation: totalBudget=${totalBudget}, notional=${orderNotionalValue.toFixed(2)}, marginRequired=${marginRequiredPerOrder.toFixed(2)}, qty=${quantity}`);
+        }
+        
+        // Final quantity calculation with budget constraints
+        const finalOrderNotional = Math.min(
+          orderNotionalValue,
+          (totalBudget / totalOrdersPlanned) * this.config.leverage
+        );
+        
+        // Ensure we meet minimum notional requirements
+        const effectiveNotional = Math.max(finalOrderNotional, this.minNotional * 1.1); // 10% above minimum
+        
+        const rawQuantity = effectiveNotional / referencePrice;
         const quantity = this.formatQuantity(rawQuantity);
         
-        console.log(`[Bot ${this.botId}] Order calculation: effectiveCapital=${effectiveCapital}, orderSize=${orderSize}, rawQuantity=${rawQuantity}, formatted=${quantity}`);
+        console.log(`[Bot ${this.botId}] Final order: notional=${effectiveNotional.toFixed(2)} USDT, quantity=${quantity}, marginPerOrder=${(effectiveNotional/this.config.leverage).toFixed(2)} USDT`);
         
         // Check for zero quantity
         if (parseFloat(quantity) === 0 || isNaN(parseFloat(quantity))) {
           console.error(`[Bot ${this.botId}] ERROR: Calculated quantity is zero or invalid!`);
+          await this.sleep(this.config.refreshInterval * 1000);
+          continue;
+        }
+        
+        // Verify final order meets minimum notional
+        const finalNotionalCheck = parseFloat(quantity) * referencePrice;
+        if (finalNotionalCheck < this.minNotional) {
+          console.error(`[Bot ${this.botId}] ERROR: Order size too small! Notional ${finalNotionalCheck.toFixed(2)} < minimum ${this.minNotional}`);
+          await this.addLog('error', `Order size too small (${finalNotionalCheck.toFixed(2)} USDT). Increase investment or reduce orders per side.`);
           await this.sleep(this.config.refreshInterval * 1000);
           continue;
         }
