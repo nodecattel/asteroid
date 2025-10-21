@@ -185,6 +185,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Close position manually (protected)
+  app.post('/api/account/close-position', requireAuth, async (req, res) => {
+    try {
+      const { symbol, side } = req.body;
+
+      if (!symbol || !side) {
+        return res.status(400).json({
+          success: false,
+          error: 'symbol and side are required'
+        });
+      }
+
+      const apiKey = process.env.ASTERDEX_API_KEY;
+      const apiSecret = process.env.ASTERDEX_API_SECRET;
+
+      if (!apiKey || !apiSecret) {
+        return res.status(400).json({
+          success: false,
+          error: 'ASTERDEX_API_KEY and ASTERDEX_API_SECRET must be set in environment variables'
+        });
+      }
+
+      const client = new AsterdexClient(apiKey, apiSecret);
+      
+      // Get current position to determine quantity
+      const positions = await client.getPositionRisk(symbol);
+      const position = positions.find((p: any) => p.symbol === symbol);
+      
+      if (!position || Math.abs(parseFloat(position.positionAmt)) === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'No open position found for this symbol'
+        });
+      }
+
+      const posAmt = parseFloat(position.positionAmt);
+      const quantity = Math.abs(posAmt);
+      
+      // Determine the side to close: opposite of current position
+      const closeSide = posAmt > 0 ? 'SELL' : 'BUY';
+      
+      // Place market order to close position
+      const order = await client.placeOrder({
+        symbol,
+        side: closeSide,
+        type: 'MARKET',
+        quantity: quantity.toString(),
+        reduceOnly: 'true', // Important: ensures we're closing, not opening new position
+      });
+      
+      res.json({
+        success: true,
+        data: order
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
   // Get all bot instances (protected)
   app.get('/api/bots', requireAuth, async (req, res) => {
     try {
