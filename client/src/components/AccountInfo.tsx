@@ -1,4 +1,5 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -6,6 +7,7 @@ import { Wallet, TrendingUp, TrendingDown, X } from "lucide-react";
 import { formatCryptoPrice } from "@/lib/utils";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { getSocket } from "@/lib/socket";
 
 interface Position {
   symbol: string;
@@ -36,27 +38,78 @@ interface Order {
   closePosition?: boolean;
 }
 
+interface PositionUpdate {
+  symbol: string;
+  positionAmt: string;
+  entryPrice: string;
+  unrealizedProfit: string;
+}
+
+interface BalanceUpdate {
+  totalWalletBalance: string;
+  availableBalance: string;
+}
+
 export default function AccountInfo() {
   const { toast } = useToast();
 
-  // Fetch account balance
+  // Fetch account balance (fallback polling with longer interval)
   const { data: balanceData, isLoading: balanceLoading, error: balanceError } = useQuery<{ success: boolean; data: Balance }>({
     queryKey: ['/api/account/balance'],
-    refetchInterval: 5000, // Refresh every 5 seconds
+    refetchInterval: 30000, // Fallback: Refresh every 30 seconds (WebSocket is primary)
   });
 
-  // Fetch positions
+  // Fetch positions (fallback polling with longer interval)
   const { data: positionsData, isLoading: positionsLoading } = useQuery<{ success: boolean; data: Position[] }>({
     queryKey: ['/api/account/positions'],
-    refetchInterval: 3000, // Refresh every 3 seconds
+    refetchInterval: 30000, // Fallback: Refresh every 30 seconds (WebSocket is primary)
   });
 
   // Fetch open orders for all positions
   const { data: ordersData } = useQuery<{ success: boolean; data: Order[] }>({
     queryKey: ['/api/account/orders'],
-    refetchInterval: 3000, // Refresh every 3 seconds
+    refetchInterval: 3000, // Keep 3 seconds for TP/SL updates
     enabled: !!positionsData?.data && positionsData.data.length > 0,
   });
+
+  // Setup WebSocket for real-time position and balance updates
+  useEffect(() => {
+    const socket = getSocket();
+
+    // Listen for real-time position updates
+    const handlePositionUpdate = (positions: PositionUpdate[]) => {
+      console.log('[WebSocket] Position update received:', positions);
+      
+      // Fetch full position data to update mark price, leverage, etc.
+      queryClient.invalidateQueries({ queryKey: ['/api/account/positions'] });
+    };
+
+    // Listen for real-time balance updates
+    const handleBalanceUpdate = (balance: BalanceUpdate) => {
+      console.log('[WebSocket] Balance update received:', balance);
+      
+      // Update balance in cache
+      queryClient.setQueryData(['/api/account/balance'], (oldData: any) => {
+        if (!oldData) return oldData;
+        return {
+          ...oldData,
+          data: {
+            ...oldData.data,
+            totalWalletBalance: balance.totalWalletBalance,
+            availableBalance: balance.availableBalance,
+          }
+        };
+      });
+    };
+
+    socket.on('positionUpdate', handlePositionUpdate);
+    socket.on('balanceUpdate', handleBalanceUpdate);
+
+    return () => {
+      socket.off('positionUpdate', handlePositionUpdate);
+      socket.off('balanceUpdate', handleBalanceUpdate);
+    };
+  }, []);
 
   // Close position mutation
   const closePositionMutation = useMutation({
