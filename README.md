@@ -1,10 +1,10 @@
-# Asterdex Volume Generator Bot
+# Astroid
 
-A fully functional, feature-complete trading bot for the Asterdex cryptocurrency exchange with real-time monitoring dashboard and **100% API utilization**.
+A fully functional, feature-complete trading bot for Aster Dex cryptocurrency exchange with real-time monitoring dashboard and **100% API utilization**.
 
 ## Features
 
-- ✅ **100% Asterdex API Coverage** - 60+ endpoints for complete market control
+- ✅ **100% Aster Dex API Coverage** - 60+ endpoints for complete market control
 - 🤖 **Multi-Bot Support** - Run multiple bots simultaneously on different pairs
 - 📊 **Real-Time Dashboard** - Terminal-inspired monochrome design
 - 🔄 **WebSocket Integration** - Instant order and position updates
@@ -82,7 +82,7 @@ SESSION_SECRET=your-session-secret-here
 # This password protects access to the dashboard
 BOT_PASSWORD=your-secure-password-here
 
-# Asterdex API Credentials (REQUIRED)
+# Aster Dex API Credentials (REQUIRED)
 # Get these from: https://asterdex.com/settings/api
 ASTERDEX_API_KEY=your-api-key-here
 ASTERDEX_API_SECRET=your-api-secret-here
@@ -95,6 +95,7 @@ DATABASE_URL=postgresql://user:pass@localhost:5432/asterdex
 - `BOT_PASSWORD` is required to access the dashboard - choose a strong password
 - All bots share the same `ASTERDEX_API_KEY` and `ASTERDEX_API_SECRET` for security
 - API credentials are stored in environment variables, not in the database or UI
+- Get your Aster Dex API credentials from: https://asterdex.com/settings/api
 
 ### Bot Configuration
 
@@ -115,7 +116,7 @@ Bot-specific settings (trading pairs, leverage, strategies) are configured throu
 ### Create a Bot
 
 1. Click "New Bot" button
-2. Select market pair from the dropdown (auto-populated from exchange)
+2. Select market pair from the dropdown (auto-populated from Aster Dex exchange)
 3. Configure trading parameters:
    - Leverage (1-300x based on market limits)
    - Investment amount (total margin budget)
@@ -126,7 +127,7 @@ Bot-specific settings (trading pairs, leverage, strategies) are configured throu
    - Trading bias (neutral, long, or short)
 4. Click "Create Bot"
 
-The bot will automatically start trading immediately after creation.
+Astroid will automatically start trading immediately after creation.
 
 ### Monitor Performance
 
@@ -140,7 +141,7 @@ The dashboard displays:
 
 ### Available Markets
 
-Markets are automatically fetched from Asterdex exchange info endpoint and refreshed every 5 minutes. Each market displays:
+Markets are automatically fetched from Aster Dex exchange info endpoint and refreshed every 5 minutes. Each market displays:
 - Trading pair symbol
 - Maximum leverage available
 - Price and quantity precision
@@ -173,7 +174,7 @@ docker-compose down -v
 - Node.js + Express
 - WebSocket (Socket.IO) for real-time updates
 - In-memory or PostgreSQL storage
-- Complete Asterdex API client (60+ methods)
+- Complete Aster Dex API client (60+ methods)
 - User data stream manager for WebSocket
 - Exchange info caching system (5-min refresh)
 
@@ -186,7 +187,7 @@ docker-compose down -v
 
 ## API Integration
 
-The bot utilizes 100% of the Asterdex API:
+Astroid utilizes 100% of the Aster Dex API:
 
 **Market Data**: Mark price, funding rates, ticker, order book, klines, trades, exchange info
 
@@ -205,7 +206,7 @@ The bot utilizes 100% of the Asterdex API:
 - **Password Authentication**: Dashboard protected with `BOT_PASSWORD` environment variable
 - **Centralized API Credentials**: All bots use shared `ASTERDEX_API_KEY` and `ASTERDEX_API_SECRET` from environment variables
 - **No Data Leakage**: API credentials never stored in database or exposed in UI
-- **HMAC SHA256**: All Asterdex API requests are cryptographically signed
+- **HMAC SHA256**: All Aster Dex API requests are cryptographically signed
 - **Session Management**: Secure HttpOnly cookies prevent XSS attacks
 - **Rate Limit Protection**: Automatic request throttling and backoff
 - **HTTPS**: Automatic when deployed on Replit (published apps)
@@ -276,7 +277,7 @@ npm start
 - `Dockerfile` - Docker image definition
 - `.dockerignore` - Files to exclude from Docker build
 - `server/exchange-info-cache.ts` - Exchange info caching with 5-min refresh
-- `server/asterdex-client.ts` - Complete Asterdex API client (60+ methods)
+- `server/asterdex-client.ts` - Complete Aster Dex API client (60+ methods)
 - `server/user-data-stream.ts` - WebSocket user data stream manager
 - `server/bot-engine.ts` - Core trading bot logic
 - `client/src/components/BotSelector.tsx` - Dynamic market selector
@@ -290,8 +291,8 @@ MIT
 For issues and questions:
 - Check the troubleshooting section
 - Review logs with `docker-compose logs -f`
-- Consult Asterdex API documentation
+- Consult Aster Dex API documentation at https://asterdex.com
 
 ## Credits
 
-Built with modern web technologies and 100% Asterdex API integration.
+**Astroid** - Built with modern web technologies and 100% Aster Dex API integration by NodeCattel.

@@ -1,7 +1,7 @@
-# Asterdex Volume Generator Bot
+# Astroid
 
 ## Overview
-The Asterdex Volume Generator Bot is a trading application for the Asterdex cryptocurrency exchange, designed to automate trading volume generation. It supports multiple bot instances, each managing a specific market pair, and features a real-time, terminal-inspired dashboard for monitoring and configuration. The project includes password-based authentication, centralized API credential management, and comprehensive security measures. It aims to be a robust, efficient, and user-friendly platform for automated volume generation, with dynamic market loading and Docker-based deployment.
+Astroid is a trading bot for Aster Dex cryptocurrency exchange, designed to automate trading volume generation. It supports multiple bot instances, each managing a specific market pair, and features a real-time, terminal-inspired dashboard for monitoring and configuration. The project includes password-based authentication, centralized API credential management, and comprehensive security measures. It aims to be a robust, efficient, and user-friendly platform for automated volume generation, with dynamic market loading and Docker-based deployment.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -18,7 +18,7 @@ The frontend uses React and TypeScript with Vite, featuring a custom terminal-in
 - **Authentication**: Protected routes using `useAuth` hook that queries `/api/auth/status`. Login component invalidates auth query cache after successful login to trigger re-authentication check.
 - **Real-time**: WebSocket integration via Socket.IO.
 - **Routing**: Wouter with authentication guard in App.tsx.
-- **Dynamic Market Selection**: Markets are auto-fetched from Asterdex, cached, and display enriched information including 24h volume, price, price change %, and leverage limits. Markets are sorted by 24h volume.
+- **Dynamic Market Selection**: Markets are auto-fetched from Aster Dex, cached, and display enriched information including 24h volume, price, price change %, and leverage limits. Markets are sorted by 24h volume.
 
 **Backend**:
 - **Runtime**: Node.js with Express.js.
@@ -27,19 +27,19 @@ The frontend uses React and TypeScript with Vite, featuring a custom terminal-in
 - **API Credentials**: Centralized `ASTERDEX_API_KEY` and `ASTERDEX_API_SECRET` stored in environment variables (not database). All bots share these credentials for security.
 - **Core Bot Engine**: Manages individual bot instances, handles trading logic, market data intelligence, batch order placement, real-time order tracking, risk monitoring, and performance analytics.
 - **Bot Manager**: A singleton orchestrator for multiple bot instances, coordinating lifecycle and broadcasting WebSocket events.
-- **Asterdex API Client**: Provides complete API coverage with HMAC SHA256 authentication, rate limit protection, and automatic backoff.
-- **User Data Stream Manager**: Manages WebSocket connections to Asterdex for real-time updates, including automatic reconnection and listen key keepalive.
-- **Exchange Info Cache**: Caches Asterdex exchange information, 24hr ticker data, and leverage brackets.
+- **Aster Dex API Client**: Provides complete API coverage with HMAC SHA256 authentication, rate limit protection, and automatic backoff.
+- **User Data Stream Manager**: Manages WebSocket connections to Aster Dex for real-time updates, including automatic reconnection and listen key keepalive.
+- **Exchange Info Cache**: Caches Aster Dex exchange information, 24hr ticker data, and leverage brackets.
 
 ### Feature Specifications
-- **Dynamic Market System**: Auto-discovers and caches markets from Asterdex, providing rich data and sorting by volume.
+- **Dynamic Market System**: Auto-discovers and caches markets from Aster Dex, providing rich data and sorting by volume.
 - **Secure Credential Management**: API credentials are stored in environment variables and are never exposed in the UI or per-bot configuration.
-- **100% Asterdex API Utilization**: Full coverage of 60+ API methods for advanced orders, risk management, market intelligence, and account analytics.
+- **100% Aster Dex API Utilization**: Full coverage of 60+ API methods for advanced orders, risk management, market intelligence, and account analytics.
 - **Intelligent Trading**: Mark price-based order placement, batch order processing, real-time order fill tracking, commission-aware P&L, and automatic risk monitoring.
 - **Multi-Bot Management**: Supports running and monitoring multiple independent bot instances on different market pairs.
 - **Rate Limit Protection**: Implements request weight tracking, order count limits, automatic backoff, and request queuing.
 - **Password Authentication**: Implemented for all bot management and account endpoints.
-- **Dynamic Max Leverage**: Fetches and displays real-time max leverage from Asterdex API for each market.
+- **Dynamic Max Leverage**: Fetches and displays real-time max leverage from Aster Dex API for each market.
 - **Budget Warning System**: Validates order sizes against total budget.
 - **Auto-Start Feature**: Bots automatically start trading after creation.
 - **Bot Parameter Editing**: Running bots can be edited without stopping them.
@@ -55,7 +55,7 @@ The frontend uses React and TypeScript with Vite, featuring a custom terminal-in
 
 ## External Dependencies
 
-- **Asterdex Exchange API**:
+- **Aster Dex Exchange API**:
     - Base URL: `https://fapi.asterdex.com`
     - WebSocket URL: `wss://fstream.asterdex.com`
     - Authentication: API Key + HMAC SHA256 signed requests.
