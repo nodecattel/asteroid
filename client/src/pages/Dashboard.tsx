@@ -287,14 +287,12 @@ export default function Dashboard() {
             )}
 
             {/* Trades History */}
-            {trades.length > 0 && (
-              <div className="space-y-3">
-                <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-1">
-                  Trade History
-                </h2>
-                <TradesHistory trades={trades} totalPnL={totalPnL} />
-              </div>
-            )}
+            <div className="space-y-3">
+              <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-1">
+                Trade History
+              </h2>
+              <TradesHistory trades={trades} totalPnL={totalPnL} />
+            </div>
 
             {/* Config Panel */}
             <ConfigPanel config={config} />
