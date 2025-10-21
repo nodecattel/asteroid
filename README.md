@@ -21,28 +21,36 @@ A fully functional, feature-complete trading bot for Aster Dex cryptocurrency ex
 
 ### Prerequisites
 
-- Docker
-- Docker Compose
+- Docker (version 20.10 or higher)
+- Docker Compose (version 2.0 or higher)
 
-### Installation
+### Method 1: Automated Setup (Recommended)
 
-1. Clone or download this repository
-2. Run the setup wizard:
+The easiest way to get started is using the `asteroid.sh` setup wizard:
 
 ```bash
+# Make the script executable
+chmod +x asteroid.sh
+
+# Run the setup wizard
 ./asteroid.sh
 ```
 
 The wizard will:
-- Check prerequisites
-- Configure environment variables
-- Set up your chosen database (in-memory or PostgreSQL)
-- Build and start the services
-- Verify everything is running
+- ✓ Check that Docker and Docker Compose are installed
+- ✓ Guide you through configuration (API keys, password, database choice)
+- ✓ Generate a secure `.env` file with all required settings
+- ✓ Build and start the Docker containers
+- ✓ Verify that everything is running correctly
 
-### Manual Docker Setup
+**What you'll need:**
+- A strong password for dashboard access
+- Aster Dex API credentials ([Get them here](https://www.asterdex.com/en/api-management))
+- Choice of database: in-memory (no persistence) or PostgreSQL (persistent storage)
 
-If you prefer manual setup:
+### Method 2: Manual Docker Setup
+
+If you prefer manual setup or want more control:
 
 ```bash
 # 1. Copy environment template
@@ -51,12 +59,79 @@ cp .env.example .env
 # 2. Edit .env with your settings
 nano .env
 
-# 3. Build and start
+# 3. (Optional) Enable PostgreSQL for persistent storage
+#    Uncomment the postgres service in docker-compose.yml
+
+# 4. Build and start all services
 docker-compose up -d
 
-# 4. View logs
-docker-compose logs -f
+# 5. View logs to confirm everything is working
+docker-compose logs -f asterdex-bot
+
+# 6. Access dashboard at http://localhost:5000
 ```
+
+### Environment Variables Reference
+
+Your `.env` file must include:
+
+| Variable | Required | Description | Example |
+|----------|----------|-------------|---------|
+| `PORT` | No | Application port | `5000` (default) |
+| `SESSION_SECRET` | Yes | Session encryption key | Generate with `openssl rand -hex 32` |
+| `BOT_PASSWORD` | Yes | Dashboard login password | Your secure password |
+| `ASTERDEX_API_KEY` | Yes | Aster Dex API key | From your Aster Dex account |
+| `ASTERDEX_API_SECRET` | Yes | Aster Dex API secret | From your Aster Dex account |
+| `DATABASE_URL` | No | PostgreSQL connection string | `postgresql://asterdex:pass@postgres:5432/asterdex` |
+| `POSTGRES_PASSWORD` | No* | PostgreSQL password | Auto-generated or custom |
+| `POSTGRES_PORT` | No | PostgreSQL external port | `5432` (default) |
+
+*Required only if using PostgreSQL
+
+### Using PostgreSQL for Persistent Storage
+
+By default, Astroid uses in-memory storage (data is lost on restart). To enable PostgreSQL:
+
+**Option 1: During `asteroid.sh` setup**
+- Select option 2 when asked about database type
+- The wizard will automatically configure everything
+
+**Option 2: Manual configuration**
+1. Uncomment the `postgres` service in `docker-compose.yml`:
+   ```bash
+   sed -i 's/^  # postgres:/  postgres:/g; s/^  #   /    /g' docker-compose.yml
+   ```
+
+2. Update your `.env` file:
+   ```env
+   DATABASE_URL=postgresql://asterdex:your_password@postgres:5432/asterdex
+   POSTGRES_PASSWORD=your_password
+   POSTGRES_PORT=5432  # External port (change if 5432 is already in use)
+   ```
+
+3. Rebuild and restart:
+   ```bash
+   docker-compose down
+   docker-compose up -d
+   ```
+
+### Port Configuration
+
+**Changing the application port:**
+```env
+# In .env file
+PORT=8080
+```
+
+Then restart: `docker-compose restart asterdex-bot`
+
+**Changing PostgreSQL port:**
+```env
+# In .env file
+POSTGRES_PORT=5433
+```
+
+This only affects external access to PostgreSQL. Internal communication between containers uses the default port 5432.
 
 ## Quick Start on Replit
 
@@ -109,6 +184,17 @@ DATABASE_URL=postgresql://user:pass@localhost:5432/asterdex
 
 Bot-specific settings (trading pairs, leverage, strategies) are configured through the web dashboard when creating each bot. API credentials are centrally managed via environment variables for enhanced security.
 
+**Key Configuration Parameters:**
+- **Market Symbol**: Trading pair (e.g., BTCUSDT, ETHUSDT)
+- **Leverage**: 1x to 300x (depending on market limits)
+- **Margin**: Your capital at risk (USDT)
+- **Target Volume**: Trading volume goal over target timeframe
+- **First Order Spread**: Distance from current price to first buy/sell order (in basis points)
+- **Order Spacing**: Spacing between subsequent orders (in basis points)
+- **Cycle Time**: Trading loop frequency (1-300 seconds, default 5s)
+- **Risk Management**: Stop-loss, take-profit percentages
+- **Trading Bias**: Neutral (50/50), Long (more buy orders), or Short (more sell orders)
+
 ## Usage
 
 ### Access the Dashboard
@@ -154,26 +240,71 @@ Markets are automatically fetched from Aster Dex exchange info endpoint and refr
 - Maximum leverage available
 - Price and quantity precision
 
-## Docker Commands
+## Docker Management Commands
+
+### Basic Commands
 
 ```bash
-# Start services
+# Start all services in background
 docker-compose up -d
 
-# View logs
+# View logs (follow mode)
 docker-compose logs -f
 
-# Stop services
+# View logs for specific service
+docker-compose logs -f asterdex-bot
+docker-compose logs -f postgres
+
+# Stop services (keeps containers)
 docker-compose stop
+
+# Start stopped services
+docker-compose start
 
 # Restart services
 docker-compose restart
 
-# Remove everything
+# Restart specific service
+docker-compose restart asterdex-bot
+```
+
+### Maintenance Commands
+
+```bash
+# Rebuild images (after code changes)
+docker-compose build --no-cache
+
+# Remove all containers (keeps volumes/data)
 docker-compose down
 
-# Remove with volumes (deletes data)
+# Remove everything including data
 docker-compose down -v
+
+# View running containers
+docker-compose ps
+
+# Execute command in running container
+docker-compose exec asterdex-bot sh
+
+# View resource usage
+docker stats asterdex-volume-bot
+```
+
+### Database Management
+
+```bash
+# Access PostgreSQL CLI
+docker-compose exec postgres psql -U asterdex -d asterdex
+
+# Backup database
+docker-compose exec postgres pg_dump -U asterdex asterdex > backup.sql
+
+# Restore database
+docker-compose exec -T postgres psql -U asterdex -d asterdex < backup.sql
+
+# Reset database (WARNING: deletes all data)
+docker-compose down -v
+docker-compose up -d
 ```
 
 ## Architecture

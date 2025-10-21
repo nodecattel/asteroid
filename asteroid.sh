@@ -156,10 +156,13 @@ create_env_file() {
     
     database_url=""
     postgres_password=""
+    postgres_port="5432"
     if [ "$db_choice" = "2" ]; then
+        read -p "Enter PostgreSQL external port (default: 5432): " postgres_port_input
+        postgres_port=${postgres_port_input:-5432}
         postgres_password=$(openssl rand -hex 16 2>/dev/null || cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
         database_url="postgresql://asterdex:${postgres_password}@postgres:5432/asterdex"
-        print_info "PostgreSQL will be configured"
+        print_info "PostgreSQL will be configured on external port ${postgres_port}"
     else
         print_info "In-memory storage will be used (data will not persist)"
     fi
@@ -185,8 +188,9 @@ ASTERDEX_API_SECRET=$api_secret
 # Database Configuration
 DATABASE_URL=$database_url
 
-# PostgreSQL Password (only used if PostgreSQL is enabled)
+# PostgreSQL Configuration (only used if PostgreSQL is enabled)
 POSTGRES_PASSWORD=$postgres_password
+POSTGRES_PORT=$postgres_port
 EOF
     
     print_success ".env file created successfully"
