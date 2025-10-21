@@ -3,7 +3,12 @@
 ## Overview
 The Asterdex Volume Generator Bot is a comprehensive trading application designed for the Asterdex cryptocurrency exchange. Its primary purpose is to generate trading volume through automated strategies, leveraging 100% of the Asterdex API. The system supports running multiple bot instances simultaneously, each managing a specific market pair. It features a real-time, terminal-inspired monochrome dashboard for monitoring bot activities, tracking key metrics, managing configurations, and accessing advanced market and performance data. The project aims to provide a robust, efficient, and user-friendly platform for automated volume generation, capable of dynamic market loading and Docker-based deployment.
 
-## Recent Updates (October 20, 2025)
+## Recent Updates (October 21, 2025)
+- 🐛 **CRITICAL: Zero Quantity Fix**: Fixed bug where high-priced assets (BTC, ETH) produced zero-quantity orders due to insufficient notional. Now calculates minimum notional needed to produce valid quantity (≥ stepSize) and uses max(targetNotional, minNotional × 1.1, minQuantityNotional × 1.5) to ensure valid orders while respecting budget constraints.
+- 🐛 **Enhanced Position Closing**: Updated `closeAllPositions()` to query actual account positions via Asterdex API, not just internally tracked positions. When a bot stops, it closes ALL positions for its specific market symbol (even from previous sessions), ensuring complete cleanup.
+- ⚠️ **Budget Warning System**: Added validation to warn users when calculated order sizes exceed total budget. Shows message: "⚠️ Orders require X USDT margin but budget is Y USDT. Consider increasing investment or reducing orders/leverage."
+
+## Previous Updates (October 20, 2025)
 - ✅ **Account Information Panel**: Displays real-time wallet balance, available balance, unrealized PnL, and open positions
 - ✅ **Secure Credentials**: All API credentials now managed via Replit secrets (ASTERDEX_API_KEY, ASTERDEX_API_SECRET)
 - ✅ **Dynamic Max Leverage**: Badge displays market-specific leverage limits (e.g., "Max 125x") next to leverage input
