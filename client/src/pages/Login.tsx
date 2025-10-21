@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Shield, Terminal } from "lucide-react";
+import { queryClient } from "@/lib/queryClient";
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -27,6 +28,9 @@ export default function Login() {
       const data = await response.json();
 
       if (data.success) {
+        // Invalidate auth status query to refetch authentication state
+        await queryClient.invalidateQueries({ queryKey: ["/api/auth/status"] });
+        
         toast({
           title: "Success",
           description: "Login successful",

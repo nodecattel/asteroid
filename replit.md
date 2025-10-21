@@ -1,7 +1,7 @@
 # Asterdex Volume Generator Bot
 
 ## Overview
-The Asterdex Volume Generator Bot is a trading application for the Asterdex cryptocurrency exchange, designed to automate trading volume generation. It supports multiple bot instances, each managing a specific market pair, and features a real-time, terminal-inspired dashboard for monitoring and configuration. The project aims to be a robust, efficient, and user-friendly platform for automated volume generation, with dynamic market loading and Docker-based deployment.
+The Asterdex Volume Generator Bot is a trading application for the Asterdex cryptocurrency exchange, designed to automate trading volume generation. It supports multiple bot instances, each managing a specific market pair, and features a real-time, terminal-inspired dashboard for monitoring and configuration. The project includes password-based authentication, centralized API credential management, and comprehensive security measures. It aims to be a robust, efficient, and user-friendly platform for automated volume generation, with dynamic market loading and Docker-based deployment.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -15,14 +15,16 @@ The frontend uses React and TypeScript with Vite, featuring a custom terminal-in
 **Frontend**:
 - **Framework**: React with TypeScript, Vite.
 - **State Management**: TanStack Query for server state/API caching.
+- **Authentication**: Protected routes using `useAuth` hook that queries `/api/auth/status`. Login component invalidates auth query cache after successful login to trigger re-authentication check.
 - **Real-time**: WebSocket integration via Socket.IO.
-- **Routing**: Wouter.
+- **Routing**: Wouter with authentication guard in App.tsx.
 - **Dynamic Market Selection**: Markets are auto-fetched from Asterdex, cached, and display enriched information including 24h volume, price, price change %, and leverage limits. Markets are sorted by 24h volume.
 
 **Backend**:
 - **Runtime**: Node.js with Express.js.
 - **API Design**: RESTful for bot management, complemented by Socket.IO for real-time communication.
-- **Authentication**: Simple password-based authentication using `BOT_PASSWORD` environment variable, with `express-session` for session management.
+- **Authentication**: Password-based authentication using `BOT_PASSWORD` environment variable (required). Session management via `express-session` with memory store. HttpOnly cookies for security. Three endpoints: `/api/auth/login`, `/api/auth/logout`, `/api/auth/status`.
+- **API Credentials**: Centralized `ASTERDEX_API_KEY` and `ASTERDEX_API_SECRET` stored in environment variables (not database). All bots share these credentials for security.
 - **Core Bot Engine**: Manages individual bot instances, handles trading logic, market data intelligence, batch order placement, real-time order tracking, risk monitoring, and performance analytics.
 - **Bot Manager**: A singleton orchestrator for multiple bot instances, coordinating lifecycle and broadcasting WebSocket events.
 - **Asterdex API Client**: Provides complete API coverage with HMAC SHA256 authentication, rate limit protection, and automatic backoff.
