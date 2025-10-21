@@ -17,9 +17,11 @@ interface BotSelectorProps {
   bots: any[];
   selectedBotId: string | null;
   onSelectBot: (botId: string) => void;
+  initialSymbol?: string;
+  onSymbolUsed?: () => void;
 }
 
-export default function BotSelector({ bots, selectedBotId, onSelectBot }: BotSelectorProps) {
+export default function BotSelector({ bots, selectedBotId, onSelectBot, initialSymbol, onSymbolUsed }: BotSelectorProps) {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const { toast } = useToast();
@@ -99,6 +101,23 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot }: BotSel
       }));
     }
   }, [availableMarkets.length]);
+
+  // Handle initialSymbol prop - open create dialog with pre-selected symbol
+  useEffect(() => {
+    if (initialSymbol && availableMarkets.length > 0) {
+      const symbolExists = availableMarkets.some(m => m.symbol === initialSymbol);
+      if (symbolExists) {
+        setFormData(prev => ({
+          ...prev,
+          marketSymbol: initialSymbol,
+        }));
+        setIsCreateOpen(true);
+        if (onSymbolUsed) {
+          onSymbolUsed();
+        }
+      }
+    }
+  }, [initialSymbol, availableMarkets, onSymbolUsed]);
 
   // When market changes, ensure leverage doesn't exceed new market's max
   useEffect(() => {
