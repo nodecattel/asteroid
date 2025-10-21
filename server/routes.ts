@@ -6,6 +6,7 @@ import { botManager } from "./bot-manager";
 import { botConfigSchema } from "@shared/schema";
 import { AsterdexClient } from "./asterdex-client";
 import { ExchangeInfoCache } from "./exchange-info-cache";
+import { UserDataStreamManager } from "./user-data-stream";
 import { setupAuth, requireAuth } from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -35,6 +36,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     return exchangeInfoCache;
   };
+
+  // Initialize global UserDataStreamManager for real-time position updates
+  let globalUserDataStream: UserDataStreamManager | null = null;
+  const initGlobalUserDataStream = async () => {
+    const apiKey = process.env.ASTERDEX_API_KEY;
+    const apiSecret = process.env.ASTERDEX_API_SECRET;
+    
+    if (!apiKey || !apiSecret) {
+      console.warn('[UserDataStream] API credentials not configured, real-time position updates disabled');
+      return;
+    }
+
+    try {
+      const client = new AsterdexClient(apiKey, apiSecret);
+      globalUserDataStream = new UserDataStreamManager(client);
+      
+      // Listen for ACCOUNT_UPDATE events and broadcast to all clients
+      globalUserDataStream.on('ACCOUNT_UPDATE', (event) => {
+        const updateData = event.data.a;
+        
+        // Extract balance updates
+        if (updateData.B && Array.isArray(updateData.B)) {
+          const balanceUpdate = updateData.B.find((b: any) => b.a === 'USDT');
+          if (balanceUpdate) {
+            io.emit('balanceUpdate', {
+              totalWalletBalance: balanceUpdate.wb,
+              availableBalance: balanceUpdate.cw,
+            });
+          }
+        }
+        
+        // Extract position updates
+        if (updateData.P && Array.isArray(updateData.P)) {
+          const positions = updateData.P
+            .filter((p: any) => Math.abs(parseFloat(p.pa)) > 0)
+            .map((p: any) => ({
+              symbol: p.s,
+              positionAmt: p.pa,
+              entryPrice: p.ep,
+              unrealizedProfit: p.up,
+            }));
+          
+          io.emit('positionUpdate', positions);
+        }
+      });
+      
+      await globalUserDataStream.start();
+      console.log('[UserDataStream] Global user data stream started for real-time position updates');
+    } catch (error) {
+      console.error('[UserDataStream] Failed to start global user data stream:', error);
+    }
+  };
+
+  // Start global user data stream
+  initGlobalUserDataStream();
 
   // Forward bot events to connected clients
   botManager.on('orderPlaced', (data) => {
