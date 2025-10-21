@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
@@ -54,7 +54,7 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot }: BotSel
   };
 
   const [formData, setFormData] = useState({
-    marketSymbol: 'ETHUSDT',
+    marketSymbol: '',
     leverage: 10,
     investmentUsdt: 10,
     targetVolume: 100000,
@@ -88,6 +88,26 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot }: BotSel
   // Get selected market info for max leverage
   const selectedMarket = availableMarkets.find(m => m.symbol === formData.marketSymbol);
   const maxLeverage = selectedMarket?.maxLeverage || 125;
+
+  // Initialize market selection when markets data loads
+  useEffect(() => {
+    if (availableMarkets.length > 0 && !formData.marketSymbol) {
+      setFormData(prev => ({
+        ...prev,
+        marketSymbol: availableMarkets[0].symbol,
+      }));
+    }
+  }, [availableMarkets.length]);
+
+  // When market changes, ensure leverage doesn't exceed new market's max
+  useEffect(() => {
+    if (selectedMarket?.maxLeverage && formData.leverage > selectedMarket.maxLeverage) {
+      setFormData(prev => ({
+        ...prev,
+        leverage: selectedMarket.maxLeverage || 10,
+      }));
+    }
+  }, [formData.marketSymbol, selectedMarket?.maxLeverage]);
 
   const createBotMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
