@@ -6,9 +6,13 @@ import { botManager } from "./bot-manager";
 import { botConfigSchema } from "@shared/schema";
 import { AsterdexClient } from "./asterdex-client";
 import { ExchangeInfoCache } from "./exchange-info-cache";
+import { setupAuth, requireAuth } from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
+  
+  // Setup authentication
+  setupAuth(app);
   
   // Initialize Socket.IO
   const io = new SocketIOServer(httpServer, {
@@ -55,8 +59,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // API Routes
+  
+  // Authentication routes
+  app.post('/api/auth/login', async (req, res) => {
+    const { password } = req.body;
+    const botPassword = process.env.BOT_PASSWORD;
 
-  // Get available markets from exchange info
+    if (!botPassword) {
+      return res.status(500).json({
+        success: false,
+        error: 'BOT_PASSWORD not configured in environment'
+      });
+    }
+
+    if (password === botPassword) {
+      const session = req.session as any;
+      session.authenticated = true;
+      return res.json({
+        success: true,
+        data: { message: 'Login successful' }
+      });
+    }
+
+    return res.status(401).json({
+      success: false,
+      error: 'Invalid password'
+    });
+  });
+
+  app.post('/api/auth/logout', (req, res) => {
+    req.session.destroy(() => {
+      res.json({
+        success: true,
+        data: { message: 'Logout successful' }
+      });
+    });
+  });
+
+  app.get('/api/auth/status', (req, res) => {
+    const session = req.session as any;
+    res.json({
+      authenticated: !!session.authenticated
+    });
+  });
+
+  // Get available markets from exchange info (public route)
   app.get('/api/markets', async (req, res) => {
     try {
       const cache = getExchangeInfoCache();
@@ -73,8 +120,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get account balance
-  app.get('/api/account/balance', async (req, res) => {
+  // Get account balance (protected)
+  app.get('/api/account/balance', requireAuth, async (req, res) => {
     try {
       const apiKey = process.env.ASTERDEX_API_KEY;
       const apiSecret = process.env.ASTERDEX_API_SECRET;
@@ -107,8 +154,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get open positions
-  app.get('/api/account/positions', async (req, res) => {
+  // Get open positions (protected)
+  app.get('/api/account/positions', requireAuth, async (req, res) => {
     try {
       const apiKey = process.env.ASTERDEX_API_KEY;
       const apiSecret = process.env.ASTERDEX_API_SECRET;
@@ -138,8 +185,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get all bot instances
-  app.get('/api/bots', async (req, res) => {
+  // Get all bot instances (protected)
+  app.get('/api/bots', requireAuth, async (req, res) => {
     try {
       const bots = await botManager.getAllBots();
       res.json({
@@ -154,8 +201,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get specific bot details
-  app.get('/api/bots/:botId', async (req, res) => {
+  // Get specific bot details (protected)
+  app.get('/api/bots/:botId', requireAuth, async (req, res) => {
     try {
       const { botId } = req.params;
       const details = await botManager.getBotDetails(botId);
@@ -171,8 +218,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create new bot instance
-  app.post('/api/bots', async (req, res) => {
+  // Create new bot instance (protected)
+  app.post('/api/bots', requireAuth, async (req, res) => {
     try {
       const config = botConfigSchema.parse(req.body);
       const botId = await botManager.createBot(config);
@@ -200,8 +247,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Start bot
-  app.post('/api/bots/:botId/start', async (req, res) => {
+  // Start bot (protected)
+  app.post('/api/bots/:botId/start', requireAuth, async (req, res) => {
     try {
       const { botId } = req.params;
       await botManager.startBot(botId);
@@ -217,8 +264,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Pause bot
-  app.post('/api/bots/:botId/pause', async (req, res) => {
+  // Pause bot (protected)
+  app.post('/api/bots/:botId/pause', requireAuth, async (req, res) => {
     try {
       const { botId } = req.params;
       await botManager.pauseBot(botId);
@@ -234,8 +281,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Stop bot
-  app.post('/api/bots/:botId/stop', async (req, res) => {
+  // Stop bot (protected)
+  app.post('/api/bots/:botId/stop', requireAuth, async (req, res) => {
     try {
       const { botId } = req.params;
       await botManager.stopBot(botId);
@@ -251,8 +298,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Update bot configuration
-  app.patch('/api/bots/:botId/config', async (req, res) => {
+  // Update bot configuration (protected)
+  app.patch('/api/bots/:botId/config', requireAuth, async (req, res) => {
     try {
       const { botId } = req.params;
       const updates = req.body;
@@ -269,8 +316,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Delete bot
-  app.delete('/api/bots/:botId', async (req, res) => {
+  // Delete bot (protected)
+  app.delete('/api/bots/:botId', requireAuth, async (req, res) => {
     try {
       const { botId } = req.params;
       await botManager.deleteBot(botId);
@@ -286,8 +333,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get bot orders
-  app.get('/api/bots/:botId/orders', async (req, res) => {
+  // Get bot orders (protected)
+  app.get('/api/bots/:botId/orders', requireAuth, async (req, res) => {
     try {
       const { botId } = req.params;
       const orders = await storage.getOrdersByBot(botId);
@@ -303,8 +350,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get bot activity logs
-  app.get('/api/bots/:botId/logs', async (req, res) => {
+  // Get bot activity logs (protected)
+  app.get('/api/bots/:botId/logs', requireAuth, async (req, res) => {
     try {
       const { botId } = req.params;
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
@@ -321,8 +368,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get bot hourly volume
-  app.get('/api/bots/:botId/volume', async (req, res) => {
+  // Get bot hourly volume (protected)
+  app.get('/api/bots/:botId/volume', requireAuth, async (req, res) => {
     try {
       const { botId } = req.params;
       const volume = await storage.getHourlyVolume(botId);
