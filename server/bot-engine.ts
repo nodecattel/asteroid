@@ -498,11 +498,37 @@ export class BotEngine extends EventEmitter {
           await this.addLog('warning', `⚠️ Orders require ${totalMarginNeeded.toFixed(2)} USDT margin but budget is ${totalBudget.toFixed(2)} USDT. Consider increasing investment or reducing orders/leverage.`);
         }
 
+        // Calculate order distribution based on tradingBias and longBiasPercent
+        let buyOrderCount = this.config.ordersPerSide;
+        let sellOrderCount = this.config.ordersPerSide;
+        
+        if (this.config.tradingBias === 'long') {
+          // Long bias: Use longBiasPercent for buy orders
+          const totalOrders = this.config.ordersPerSide * 2;
+          buyOrderCount = Math.round((totalOrders * this.config.longBiasPercent) / 100);
+          sellOrderCount = totalOrders - buyOrderCount;
+          console.log(`[Bot ${this.botId}] 📈 LONG bias active: ${buyOrderCount} buy orders, ${sellOrderCount} sell orders (${this.config.longBiasPercent}% long)`);
+        } else if (this.config.tradingBias === 'short') {
+          // Short bias: Invert longBiasPercent for sell orders
+          const totalOrders = this.config.ordersPerSide * 2;
+          sellOrderCount = Math.round((totalOrders * this.config.longBiasPercent) / 100);
+          buyOrderCount = totalOrders - sellOrderCount;
+          console.log(`[Bot ${this.botId}] 📉 SHORT bias active: ${buyOrderCount} buy orders, ${sellOrderCount} sell orders (${this.config.longBiasPercent}% short)`);
+        } else if (this.config.longBiasPercent !== 50) {
+          // Neutral with custom bias percentage
+          const totalOrders = this.config.ordersPerSide * 2;
+          buyOrderCount = Math.round((totalOrders * this.config.longBiasPercent) / 100);
+          sellOrderCount = totalOrders - buyOrderCount;
+          console.log(`[Bot ${this.botId}] ⚖️ Custom bias: ${buyOrderCount} buy orders, ${sellOrderCount} sell orders (${this.config.longBiasPercent}% long)`);
+        } else {
+          console.log(`[Bot ${this.botId}] ⚖️ Neutral bias: ${buyOrderCount} buy orders, ${sellOrderCount} sell orders (50/50)`);
+        }
+
         // Use batch orders for efficiency
         const batchOrders: any[] = [];
 
-        // Prepare buy orders
-        for (let i = 0; i < Math.min(this.config.ordersPerSide, this.config.maxOrdersToPlace); i++) {
+        // Prepare buy orders (respecting bias)
+        for (let i = 0; i < Math.min(buyOrderCount, this.config.maxOrdersToPlace); i++) {
           const rawPrice = referencePrice - spreadAmount - (i * spreadAmount * 0.1);
           const price = this.formatPrice(rawPrice);
           const priceNum = parseFloat(price);
@@ -541,8 +567,8 @@ export class BotEngine extends EventEmitter {
           });
         }
 
-        // Prepare sell orders
-        for (let i = 0; i < Math.min(this.config.ordersPerSide, this.config.maxOrdersToPlace); i++) {
+        // Prepare sell orders (respecting bias)
+        for (let i = 0; i < Math.min(sellOrderCount, this.config.maxOrdersToPlace); i++) {
           const rawPrice = referencePrice + spreadAmount + (i * spreadAmount * 0.1);
           const price = this.formatPrice(rawPrice);
           const priceNum = parseFloat(price);
