@@ -88,18 +88,8 @@ export default function AccountInfo() {
     const handleBalanceUpdate = (balance: BalanceUpdate) => {
       console.log('[WebSocket] Balance update received:', balance);
       
-      // Update balance in cache
-      queryClient.setQueryData(['/api/account/balance'], (oldData: any) => {
-        if (!oldData) return oldData;
-        return {
-          ...oldData,
-          data: {
-            ...oldData.data,
-            totalWalletBalance: balance.totalWalletBalance,
-            availableBalance: balance.availableBalance,
-          }
-        };
-      });
+      // Refetch full balance data to ensure all fields are updated correctly
+      queryClient.invalidateQueries({ queryKey: ['/api/account/balance'] });
     };
 
     socket.on('positionUpdate', handlePositionUpdate);
