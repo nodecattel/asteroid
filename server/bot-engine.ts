@@ -846,6 +846,10 @@ export class BotEngine extends EventEmitter {
         ? position.entryPrice * (1 + this.config.takeProfitPercent / 100) // LONG: higher price
         : position.entryPrice * (1 - this.config.takeProfitPercent / 100); // SHORT: lower price
 
+      // Log calculated prices for debugging
+      console.log(`[Bot ${this.botId}] Protection orders for ${position.side} position:`);
+      console.log(`  Entry: ${position.entryPrice}, SL: ${stopLossPrice} (${position.side === 'LONG' ? 'lower' : 'higher'}), TP: ${takeProfitPrice} (${position.side === 'LONG' ? 'higher' : 'lower'})`);
+
       // Place Stop-Loss order (Layer 1)
       if (this.config.enableStopLoss) {
         try {
@@ -860,7 +864,7 @@ export class BotEngine extends EventEmitter {
           });
 
           position.stopLossOrderId = stopLossOrder.orderId?.toString();
-          await this.addLog('success', `Stop-loss placed at ${this.formatPrice(stopLossPrice)} (${this.config.stopLossPercent}%)`);
+          await this.addLog('success', `Stop-loss placed: ${this.formatPrice(stopLossPrice)} (${position.side === 'LONG' ? 'below' : 'above'} entry, ${this.config.stopLossPercent}% loss limit)`);
         } catch (error: any) {
           const errorDetails = error.response?.data ? JSON.stringify(error.response.data) : error.message;
           console.error(`[Bot ${this.botId}] Stop-loss placement error:`, errorDetails);
@@ -882,7 +886,7 @@ export class BotEngine extends EventEmitter {
           });
 
           position.takeProfitOrderId = takeProfitOrder.orderId?.toString();
-          await this.addLog('success', `Take-profit placed at ${this.formatPrice(takeProfitPrice)} (${this.config.takeProfitPercent}%)`);
+          await this.addLog('success', `Take-profit placed: ${this.formatPrice(takeProfitPrice)} (${position.side === 'LONG' ? 'above' : 'below'} entry, ${this.config.takeProfitPercent}% profit target)`);
         } catch (error: any) {
           const errorDetails = error.response?.data ? JSON.stringify(error.response.data) : error.message;
           console.error(`[Bot ${this.botId}] Take-profit placement error:`, errorDetails);
