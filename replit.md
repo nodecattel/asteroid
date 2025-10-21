@@ -23,6 +23,7 @@ The Asterdex Volume Generator Bot is a comprehensive trading application designe
 - ✅ **Bot Parameter Editing**: Running bots can now be edited via PATCH /api/bots/:botId/config endpoint - all parameters (investment, leverage, spread, TP/SL, trading bias, etc.) can be updated without stopping the bot
 - 🐛 **CRITICAL: Stop-Loss/Take-Profit Fix**: Fixed broken TP/SL logic that prevented positions from closing when hitting loss thresholds. Both LONG and SHORT positions now correctly trigger stop-loss at configured loss % and take-profit at configured profit %. Positions automatically close and restart with new orders.
 - ✅ **Auto-Close Positions on Stop**: When stopping a bot, all open positions are now automatically closed with market orders before canceling pending orders. This prevents lingering positions that could incur losses or funding fees.
+- ✅ **Total Investment Budget Model**: Changed from leveraged capital approach to total investment budget. The `investmentUsdt` field now represents the total margin budget available. Order sizes are calculated to fit within this budget, accounting for leverage. Each order is guaranteed to meet exchange minimum notional requirements while staying within the allocated budget.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -58,6 +59,7 @@ The frontend is built with React and TypeScript using Vite, featuring a custom t
 - **Rate Limit Protection**: Implements request weight tracking, order count limits, automatic backoff, and request queuing.
 
 ### System Design Choices
+- **Investment Model**: Uses total investment budget approach where `investmentUsdt` represents the total margin available. Order sizes are calculated dynamically to fit within this budget while accounting for leverage. Each order's notional value is limited by: (1) budget-per-order = totalBudget / totalOrders, (2) leveraged notional = budget-per-order × leverage, and (3) minimum notional enforcement (10% above exchange minimum). This ensures orders never exceed available margin while meeting all exchange requirements (tick size, step size, min notional).
 - **Data Storage**: In-memory storage for development, with optional PostgreSQL using Drizzle ORM for production (configured via Docker Compose). Zod schemas ensure data integrity. Note: API credentials are never stored in the database - they are injected from environment variables at runtime.
 - **Security**: API credentials are stored exclusively in .env file (never in database or UI). Environment variables `ASTERDEX_API_KEY` and `ASTERDEX_API_SECRET` are required. Bot Manager validates and injects credentials at bot creation and startup.
 - **Deployment**: Docker-based deployment is recommended for production using Docker Compose. An interactive setup wizard (`asteroid.sh`) simplifies prerequisite checks, environment configuration (including secure API credential collection), and service management. Replit deployment is supported for development/testing.
