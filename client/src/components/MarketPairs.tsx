@@ -218,12 +218,12 @@ export default function MarketPairs() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleSort('symbol')}
+                  onClick={() => handleSort('volume')}
                   className="h-7 px-2 -ml-2 hover-elevate text-muted-foreground hover:text-foreground"
-                  data-testid="button-sort-symbol"
+                  data-testid="button-sort-volume"
                 >
                   Symbols / Volume
-                  {sortField === 'symbol' && (
+                  {sortField === 'volume' && (
                     <ArrowUpDown className="ml-1 h-3 w-3" />
                   )}
                 </Button>
@@ -278,11 +278,14 @@ export default function MarketPairs() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => handleSort('symbol')}
+                  onClick={() => handleSort('volume')}
                   className="h-6 px-1 -ml-1 text-xs hover-elevate text-muted-foreground"
-                  data-testid="button-sort-symbol-mobile"
+                  data-testid="button-sort-volume-mobile"
                 >
                   Symbols / Volume
+                  {sortField === 'volume' && (
+                    <ArrowUpDown className="ml-1 h-3 w-3" />
+                  )}
                 </Button>
               </div>
               <div className="col-span-6 text-right">
