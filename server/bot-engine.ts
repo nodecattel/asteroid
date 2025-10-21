@@ -822,16 +822,18 @@ export class BotEngine extends EventEmitter {
             symbol: this.config.marketSymbol,
             side: position.side === 'LONG' ? 'SELL' : 'BUY',
             type: 'STOP_MARKET',
+            quantity: position.quantity,
             stopPrice: this.formatPrice(stopLossPrice),
-            closePosition: true,
+            reduceOnly: true,
             workingType: 'MARK_PRICE',
-            priceProtect: true,
           });
 
           position.stopLossOrderId = stopLossOrder.orderId?.toString();
           await this.addLog('success', `Stop-loss placed at ${this.formatPrice(stopLossPrice)} (${this.config.stopLossPercent}%)`);
         } catch (error: any) {
-          await this.addLog('error', `Failed to place stop-loss: ${error.message}`);
+          const errorDetails = error.response?.data ? JSON.stringify(error.response.data) : error.message;
+          console.error(`[Bot ${this.botId}] Stop-loss placement error:`, errorDetails);
+          await this.addLog('error', `Failed to place stop-loss: ${errorDetails}`);
         }
       }
 
@@ -842,15 +844,18 @@ export class BotEngine extends EventEmitter {
             symbol: this.config.marketSymbol,
             side: position.side === 'LONG' ? 'SELL' : 'BUY',
             type: 'TAKE_PROFIT_MARKET',
+            quantity: position.quantity,
             stopPrice: this.formatPrice(takeProfitPrice),
-            closePosition: true,
+            reduceOnly: true,
             workingType: 'MARK_PRICE',
           });
 
           position.takeProfitOrderId = takeProfitOrder.orderId?.toString();
           await this.addLog('success', `Take-profit placed at ${this.formatPrice(takeProfitPrice)} (${this.config.takeProfitPercent}%)`);
         } catch (error: any) {
-          await this.addLog('error', `Failed to place take-profit: ${error.message}`);
+          const errorDetails = error.response?.data ? JSON.stringify(error.response.data) : error.message;
+          console.error(`[Bot ${this.botId}] Take-profit placement error:`, errorDetails);
+          await this.addLog('error', `Failed to place take-profit: ${errorDetails}`);
         }
       }
 
