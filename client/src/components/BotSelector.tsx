@@ -67,6 +67,7 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
     orderSpacingBps: 2,
     ordersPerSide: 3,
     orderSizePercent: 25,
+    cycleTimeSeconds: 5,
     refreshInterval: 60,
     tradingBias: 'neutral' as 'neutral' | 'long' | 'short',
     longBiasPercent: 50,
@@ -660,6 +661,29 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
                           max="100"
                           value={formData.orderSizePercent}
                           onChange={(e) => setFormData({ ...formData, orderSizePercent: Number(e.target.value) })}
+                          className="h-11"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor="cycleTime">Cycle Time (sec)</Label>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="w-4 h-4 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p><strong>Trade-off:</strong> Shorter cycles (3-10s) = more volume generation but less time for orders to fill. Longer cycles (30-60s) = better trade quality and higher fill rates but lower volume.</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <Input
+                          id="cycleTime"
+                          data-testid="input-cycle-time"
+                          type="number"
+                          min="3"
+                          max="300"
+                          value={formData.cycleTimeSeconds}
+                          onChange={(e) => setFormData({ ...formData, cycleTimeSeconds: Number(e.target.value) })}
                           className="h-11"
                         />
                       </div>
