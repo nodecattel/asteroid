@@ -18,9 +18,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Initialize exchange info cache with a temporary client (no auth needed for public endpoints)
-  const tempClient = new AsterdexClient('', '');
-  const exchangeInfoCache = new ExchangeInfoCache(tempClient);
+  // Initialize exchange info cache (will be created per request with auth for leverage data)
+  let exchangeInfoCache: ExchangeInfoCache | null = null;
+
+  // Helper to get or create exchange info cache with auth
+  const getExchangeInfoCache = () => {
+    const apiKey = process.env.ASTERDEX_API_KEY || '';
+    const apiSecret = process.env.ASTERDEX_API_SECRET || '';
+    const client = new AsterdexClient(apiKey, apiSecret);
+    if (!exchangeInfoCache) {
+      exchangeInfoCache = new ExchangeInfoCache(client);
+    }
+    return exchangeInfoCache;
+  };
 
   // Forward bot events to connected clients
   botManager.on('orderPlaced', (data) => {
@@ -49,7 +59,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get available markets from exchange info
   app.get('/api/markets', async (req, res) => {
     try {
-      const markets = await exchangeInfoCache.getAvailableMarkets();
+      const cache = getExchangeInfoCache();
+      const markets = await cache.getAvailableMarkets();
       res.json({
         success: true,
         data: markets

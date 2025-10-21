@@ -103,21 +103,42 @@ export class ExchangeInfoCache {
       // Continue without ticker data if it fails
     }
     
-    // Create a map of symbol to ticker data for quick lookup
+    // Fetch leverage brackets for all symbols
+    let leverageBrackets: any = [];
+    try {
+      leverageBrackets = await this.client.getLeverageBracket();
+      console.log('[ExchangeInfoCache] Fetched leverage brackets for', leverageBrackets.length, 'symbols');
+    } catch (error) {
+      console.error('Failed to fetch leverage brackets:', error);
+      // Continue without leverage data if it fails
+    }
+    
+    // Create maps for quick lookup
     const tickerMap = new Map<string, TickerInfo>();
     tickers.forEach(t => tickerMap.set(t.symbol, t));
     
-    // Filter only TRADING symbols and enrich with ticker data
+    const leverageMap = new Map<string, number>();
+    if (Array.isArray(leverageBrackets)) {
+      leverageBrackets.forEach((item: any) => {
+        if (item.symbol && item.brackets && item.brackets.length > 0) {
+          // The first bracket has the highest leverage
+          leverageMap.set(item.symbol, item.brackets[0].initialLeverage);
+        }
+      });
+    }
+    
+    // Filter only TRADING symbols and enrich with ticker and leverage data
     const enrichedMarkets = info.symbols
       .filter(s => s.status === 'TRADING')
       .map(s => {
         const ticker = tickerMap.get(s.symbol);
+        const maxLeverage = leverageMap.get(s.symbol) || 125; // Default to 125 if not found
         return {
           symbol: s.symbol,
           baseAsset: s.baseAsset,
           quoteAsset: s.quoteAsset,
           status: s.status,
-          maxLeverage: s.maxLeverage,
+          maxLeverage: maxLeverage,
           pricePrecision: s.pricePrecision,
           quantityPrecision: s.quantityPrecision,
           volume24h: ticker ? parseFloat(ticker.volume) : 0,
