@@ -63,7 +63,8 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
     targetVolume: 100000,
     maxLoss: 10,
     targetHours: 24,
-    spreadBps: 5,
+    firstOrderSpreadBps: 5,
+    orderSpacingBps: 2,
     ordersPerSide: 3,
     orderSizePercent: 25,
     refreshInterval: 60,
@@ -329,7 +330,7 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
             New Bot
           </Button>
         </DialogTrigger>
-        <DialogContent className="max-w-[95vw] sm:max-w-3xl lg:max-w-5xl max-h-[90vh] overflow-y-auto font-mono">
+        <DialogContent className="max-w-[98vw] w-full sm:max-w-3xl lg:max-w-5xl max-h-[92vh] overflow-y-auto font-mono p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="text-xl sm:text-2xl">Create New Trading Bot</DialogTitle>
             <DialogDescription className="text-sm">
@@ -485,7 +486,7 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
                   <CardDescription>Define trading volume goals and risk limits</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <Label htmlFor="targetVolume">Target Volume</Label>
@@ -568,27 +569,50 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <div className="flex items-center gap-2">
-                          <Label htmlFor="spreadBps">Spread (bps)</Label>
+                          <Label htmlFor="firstOrderSpreadBps">First Order Spread (bps)</Label>
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Info className="w-4 h-4 text-muted-foreground cursor-help" />
                             </TooltipTrigger>
                             <TooltipContent className="max-w-xs">
-                              <p>Order spread in basis points (1 bps = 0.01%). Lower = tighter around market price</p>
+                              <p>Distance in basis points from current price to first buy/sell order (1 bps = 0.01%)</p>
                             </TooltipContent>
                           </Tooltip>
                         </div>
                         <Input
-                          id="spreadBps"
-                          data-testid="input-spread"
+                          id="firstOrderSpreadBps"
+                          data-testid="input-first-order-spread"
                           type="number"
                           step="0.1"
                           min="0.1"
-                          value={formData.spreadBps}
-                          onChange={(e) => setFormData({ ...formData, spreadBps: Number(e.target.value) })}
+                          value={formData.firstOrderSpreadBps}
+                          onChange={(e) => setFormData({ ...formData, firstOrderSpreadBps: Number(e.target.value) })}
+                          className="h-11"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor="orderSpacingBps">Order Spacing (bps)</Label>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="w-4 h-4 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p>Distance in basis points between subsequent orders to avoid large exponential spreads</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <Input
+                          id="orderSpacingBps"
+                          data-testid="input-order-spacing"
+                          type="number"
+                          step="0.1"
+                          min="0.1"
+                          value={formData.orderSpacingBps}
+                          onChange={(e) => setFormData({ ...formData, orderSpacingBps: Number(e.target.value) })}
                           className="h-11"
                         />
                       </div>
@@ -918,7 +942,7 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
 
       {/* Edit Bot Dialog - Same as Create but with disabled market selector and update mutation */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent className="max-w-[95vw] sm:max-w-3xl lg:max-w-5xl max-h-[90vh] overflow-y-auto font-mono">
+        <DialogContent className="max-w-[98vw] w-full sm:max-w-3xl lg:max-w-5xl max-h-[92vh] overflow-y-auto font-mono p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="text-xl sm:text-2xl">Edit Bot Configuration</DialogTitle>
             <DialogDescription className="text-sm">
