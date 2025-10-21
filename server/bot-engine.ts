@@ -60,6 +60,10 @@ export class BotEngine extends EventEmitter {
   private netPosition: number = 0; // Net position quantity (positive = long, negative = short)
   private circuitBreakerTriggered: boolean = false;
 
+  // Smart order management
+  private lastOrderPrice: number = 0; // Track last reference price when orders were placed
+  private priceDeviationThreshold: number = 0.003; // Cancel only if price moves > 0.3%
+
   private botShortId: string;
 
   constructor(botId: string, config: BotConfig) {
@@ -408,7 +412,27 @@ export class BotEngine extends EventEmitter {
           order.type !== 'TAKE_PROFIT_MARKET'
         );
         
-        if (limitOrders.length > 0) {
+        // Smart order management: Only cancel if price has moved significantly
+        let shouldCancelOrders = false;
+        
+        if (this.lastOrderPrice === 0) {
+          // First iteration - no previous orders
+          shouldCancelOrders = true;
+          console.log(`[Bot ${this.botId}] 🆕 First iteration - will place initial orders`);
+        } else {
+          const priceChange = Math.abs(referencePrice - this.lastOrderPrice) / this.lastOrderPrice;
+          const threshold = Math.max(this.priceDeviationThreshold, this.config.spreadBps / 10000);
+          
+          if (priceChange > threshold) {
+            shouldCancelOrders = true;
+            console.log(`[Bot ${this.botId}] 📊 Price moved ${(priceChange * 100).toFixed(2)}% (threshold: ${(threshold * 100).toFixed(2)}%) - cancelling orders`);
+          } else {
+            shouldCancelOrders = false;
+            console.log(`[Bot ${this.botId}] ✅ Price stable (${(priceChange * 100).toFixed(3)}% change) - keeping ${limitOrders.length} orders alive`);
+          }
+        }
+        
+        if (shouldCancelOrders && limitOrders.length > 0) {
           console.log(`[Bot ${this.botId}] Canceling ${limitOrders.length} LIMIT orders (keeping TP/SL protection orders active)`);
           
           // Cancel each limit order individually to preserve TP/SL orders
@@ -421,6 +445,10 @@ export class BotEngine extends EventEmitter {
           }
           
           await this.sleep(this.config.delayAfterCancel * 1000);
+        } else if (!shouldCancelOrders) {
+          // Skip order placement if we're keeping existing orders
+          await this.sleep(this.config.refreshInterval * 1000);
+          continue;
         }
 
         // Calculate order size using total investment budget approach
@@ -662,6 +690,9 @@ export class BotEngine extends EventEmitter {
           }
         }
 
+        // Update last order price for smart order management
+        this.lastOrderPrice = referencePrice;
+        
         // Check manual TP/SL and circuit breaker (Layer 2 protection)
         await this.checkManualTPSL();
 
