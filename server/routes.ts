@@ -231,8 +231,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         symbol,
         side: closeSide,
         type: 'MARKET',
-        quantity: quantity.toString(),
-        reduceOnly: 'true', // Important: ensures we're closing, not opening new position
+        quantity: quantity,
+        reduceOnly: true, // Important: ensures we're closing, not opening new position
       });
       
       res.json({

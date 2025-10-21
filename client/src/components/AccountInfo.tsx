@@ -44,11 +44,7 @@ export default function AccountInfo() {
   // Close position mutation
   const closePositionMutation = useMutation({
     mutationFn: async ({ symbol, side }: { symbol: string; side: 'LONG' | 'SHORT' }) => {
-      return await apiRequest('/api/account/close-position', {
-        method: 'POST',
-        body: JSON.stringify({ symbol, side }),
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return await apiRequest('POST', '/api/account/close-position', { symbol, side });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/account/positions'] });
