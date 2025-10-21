@@ -399,8 +399,9 @@ export class BotEngine extends EventEmitter {
         
         console.log(`[Bot ${this.botId}] 💰 Reference price: ${referencePrice}, Bid: ${bestBid}, Ask: ${bestAsk}`);
 
-        // Calculate spread
-        const spreadAmount = referencePrice * (this.config.spreadBps / 10000);
+        // Calculate spread amounts
+        const firstOrderSpread = referencePrice * (this.config.firstOrderSpreadBps / 10000);
+        const orderSpacing = referencePrice * (this.config.orderSpacingBps / 10000);
 
         // Get current open orders
         const openOrders = await this.client.getOpenOrders(this.config.marketSymbol);
@@ -421,7 +422,7 @@ export class BotEngine extends EventEmitter {
           console.log(`[Bot ${this.botId}] 🆕 First iteration - will place initial orders`);
         } else {
           const priceChange = Math.abs(referencePrice - this.lastOrderPrice) / this.lastOrderPrice;
-          const threshold = Math.max(this.priceDeviationThreshold, this.config.spreadBps / 10000);
+          const threshold = Math.max(this.priceDeviationThreshold, this.config.firstOrderSpreadBps / 10000);
           
           if (priceChange > threshold) {
             shouldCancelOrders = true;
@@ -557,7 +558,9 @@ export class BotEngine extends EventEmitter {
 
         // Prepare buy orders (respecting bias)
         for (let i = 0; i < Math.min(buyOrderCount, this.config.maxOrdersToPlace); i++) {
-          const rawPrice = referencePrice - spreadAmount - (i * spreadAmount * 0.1);
+          // First order: referencePrice - firstOrderSpread
+          // Subsequent orders: previous price - orderSpacing
+          const rawPrice = referencePrice - firstOrderSpread - (i * orderSpacing);
           const price = this.formatPrice(rawPrice);
           const priceNum = parseFloat(price);
           const qtyNum = parseFloat(quantity);
@@ -597,7 +600,9 @@ export class BotEngine extends EventEmitter {
 
         // Prepare sell orders (respecting bias)
         for (let i = 0; i < Math.min(sellOrderCount, this.config.maxOrdersToPlace); i++) {
-          const rawPrice = referencePrice + spreadAmount + (i * spreadAmount * 0.1);
+          // First order: referencePrice + firstOrderSpread
+          // Subsequent orders: previous price + orderSpacing
+          const rawPrice = referencePrice + firstOrderSpread + (i * orderSpacing);
           const price = this.formatPrice(rawPrice);
           const priceNum = parseFloat(price);
           const qtyNum = parseFloat(quantity);
