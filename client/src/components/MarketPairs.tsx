@@ -505,29 +505,33 @@ export default function MarketPairs({ onCreateBot }: MarketPairsProps) {
         <AlertDialogContent data-testid="dialog-confirm-create-bot">
           <AlertDialogHeader>
             <AlertDialogTitle>Create new bot?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Create new bot with <strong className="text-foreground">{selectedSymbol}</strong> pair?
-              {selectedSymbol && (() => {
-                const market = markets.find(m => m.symbol === selectedSymbol);
-                return market ? (
-                  <div className="mt-3 p-3 bg-muted rounded-md space-y-1.5">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Last Price:</span>
-                      <span className="font-mono">{formatCryptoPrice(market.lastPrice, market.pricePrecision)}</span>
+            <AlertDialogDescription asChild>
+              <div>
+                <p className="mb-3">
+                  Create new bot with <strong className="text-foreground">{selectedSymbol}</strong> pair?
+                </p>
+                {selectedSymbol && (() => {
+                  const market = markets.find(m => m.symbol === selectedSymbol);
+                  return market ? (
+                    <div className="p-3 bg-muted rounded-md space-y-1.5">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Last Price:</span>
+                        <span className="font-mono">{formatCryptoPrice(market.lastPrice, market.pricePrecision)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">24h Change:</span>
+                        <span className={`font-mono ${market.priceChangePercent24h >= 0 ? 'text-primary' : 'text-destructive'}`}>
+                          {market.priceChangePercent24h >= 0 ? '+' : ''}{market.priceChangePercent24h.toFixed(2)}%
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">Max Leverage:</span>
+                        <span className="font-medium">{market.maxLeverage}x</span>
+                      </div>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">24h Change:</span>
-                      <span className={`font-mono ${market.priceChangePercent24h >= 0 ? 'text-primary' : 'text-destructive'}`}>
-                        {market.priceChangePercent24h >= 0 ? '+' : ''}{market.priceChangePercent24h.toFixed(2)}%
-                      </span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Max Leverage:</span>
-                      <span className="font-medium">{market.maxLeverage}x</span>
-                    </div>
-                  </div>
-                ) : null;
-              })()}
+                  ) : null;
+                })()}
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
