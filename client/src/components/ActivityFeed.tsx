@@ -1,5 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Pause, Play } from "lucide-react";
 
 export interface ActivityLog {
   id: string;
@@ -15,12 +17,13 @@ interface ActivityFeedProps {
 
 export default function ActivityFeed({ logs, maxHeight = "400px" }: ActivityFeedProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [autoScroll, setAutoScroll] = useState(true);
 
   useEffect(() => {
-    if (scrollRef.current) {
+    if (scrollRef.current && autoScroll) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
-  }, [logs]);
+  }, [logs, autoScroll]);
 
   const getLogColor = (type: ActivityLog["type"]) => {
     switch (type) {
@@ -50,13 +53,34 @@ export default function ActivityFeed({ logs, maxHeight = "400px" }: ActivityFeed
 
   return (
     <Card className="p-4">
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-3 flex items-center justify-between gap-2">
         <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
           Activity Feed
         </h3>
-        <span className="text-xs text-muted-foreground font-mono" data-testid="text-log-count">
-          {logs.length} events
-        </span>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setAutoScroll(!autoScroll)}
+            className="h-6 px-2"
+            data-testid="button-toggle-autoscroll"
+          >
+            {autoScroll ? (
+              <>
+                <Pause className="w-3 h-3 mr-1" />
+                <span className="text-xs">Pause</span>
+              </>
+            ) : (
+              <>
+                <Play className="w-3 h-3 mr-1" />
+                <span className="text-xs">Resume</span>
+              </>
+            )}
+          </Button>
+          <span className="text-xs text-muted-foreground font-mono" data-testid="text-log-count">
+            {logs.length} events
+          </span>
+        </div>
       </div>
       <div
         ref={scrollRef}
