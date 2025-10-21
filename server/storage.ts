@@ -81,6 +81,15 @@ export class MemStorage implements IStorage {
       hourlyVolume: 0,
       hourlyTrades: 0,
       sessionUptime: 0,
+      openPositions: 0,
+      totalPositionValue: 0,
+      unrealizedPnL: 0,
+      realizedPnL: 0,
+      positionsWithStopLoss: 0,
+      positionsWithTakeProfit: 0,
+      trailingStopsActive: 0,
+      circuitBreakerTriggered: false,
+      riskScore: 0,
     });
     
     return instance;
@@ -127,6 +136,15 @@ export class MemStorage implements IStorage {
       hourlyVolume: 0,
       hourlyTrades: 0,
       sessionUptime: 0,
+      openPositions: 0,
+      totalPositionValue: 0,
+      unrealizedPnL: 0,
+      realizedPnL: 0,
+      positionsWithStopLoss: 0,
+      positionsWithTakeProfit: 0,
+      trailingStopsActive: 0,
+      circuitBreakerTriggered: false,
+      riskScore: 0,
     };
     
     const updated = { ...current, ...stats };
