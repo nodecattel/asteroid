@@ -59,6 +59,7 @@ export class BotEngine extends EventEmitter {
   private positions: Map<string, TrackedPosition> = new Map();
   private netPosition: number = 0; // Net position quantity (positive = long, negative = short)
   private circuitBreakerTriggered: boolean = false;
+  private lastProtectionOrderUpdate: Map<string, number> = new Map(); // Track last TP/SL update time per position
 
   // Smart order management
   private lastOrderPrice: number = 0; // Track last reference price when orders were placed
@@ -804,6 +805,7 @@ export class BotEngine extends EventEmitter {
           
           // Place native TP/SL orders (Layer 1 protection)
           await this.placeProtectionOrders(positionId, newPosition);
+          this.lastProtectionOrderUpdate.set(positionId, Date.now());
         } else {
           // Position size changed - update entry price (weighted average)
           const totalQty = existingPosition.quantity + Math.abs(quantityChange);
@@ -900,11 +902,26 @@ export class BotEngine extends EventEmitter {
   }
 
   private async updateProtectionOrders(positionId: string, position: TrackedPosition): Promise<void> {
+    // Prevent too frequent TP/SL updates to avoid hitting exchange stop order limits
+    const now = Date.now();
+    const lastUpdate = this.lastProtectionOrderUpdate.get(positionId) || 0;
+    const timeSinceLastUpdate = now - lastUpdate;
+    
+    // Only update if at least 30 seconds have passed since last update
+    // This prevents rapid cancel/replace cycles that hit exchange limits
+    if (timeSinceLastUpdate < 30000) {
+      console.log(`[Bot ${this.botId}] Skipping TP/SL update (last update was ${(timeSinceLastUpdate/1000).toFixed(1)}s ago)`);
+      return;
+    }
+    
     // Cancel existing protection orders
     await this.cancelProtectionOrders(positionId, position);
     
     // Place new protection orders with updated prices
     await this.placeProtectionOrders(positionId, position);
+    
+    // Track update time
+    this.lastProtectionOrderUpdate.set(positionId, now);
   }
 
   private async cancelProtectionOrders(positionId: string, position: TrackedPosition): Promise<void> {
