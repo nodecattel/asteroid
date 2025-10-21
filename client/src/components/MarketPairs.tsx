@@ -28,21 +28,6 @@ type TabFilter = 'favorites' | 'all';
 
 const FAVORITES_KEY = 'astroid_favorite_markets';
 
-// Simple crypto icon placeholder component
-function CryptoIcon({ symbol }: { symbol: string }) {
-  const colors = [
-    'bg-orange-500', 'bg-blue-500', 'bg-purple-500', 'bg-green-500', 
-    'bg-yellow-500', 'bg-pink-500', 'bg-indigo-500', 'bg-red-500'
-  ];
-  const colorIndex = symbol.charCodeAt(0) % colors.length;
-  
-  return (
-    <div className={`w-8 h-8 rounded-full ${colors[colorIndex]} flex items-center justify-center text-white font-bold text-xs shrink-0`}>
-      {symbol.slice(0, 2)}
-    </div>
-  );
-}
-
 export default function MarketPairs() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState<SortField>('volume');
@@ -331,7 +316,7 @@ export default function MarketPairs() {
                       {/* Desktop Layout */}
                       <div className="hidden md:grid md:grid-cols-12 gap-4 px-4 sm:px-6 py-3 items-center">
                         {/* Symbol + Volume */}
-                        <div className="col-span-4 lg:col-span-3 flex items-center gap-3">
+                        <div className="col-span-4 lg:col-span-3 flex items-center gap-2.5">
                           <button
                             onClick={(e) => toggleFavorite(market.symbol, e)}
                             className="text-muted-foreground hover:text-primary transition-colors shrink-0"
@@ -341,7 +326,6 @@ export default function MarketPairs() {
                               className={`w-4 h-4 ${isFavorite ? 'fill-primary text-primary' : ''}`}
                             />
                           </button>
-                          <CryptoIcon symbol={market.baseAsset} />
                           <div className="min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-semibold text-sm" data-testid={`text-symbol-${market.symbol}`}>
@@ -407,7 +391,6 @@ export default function MarketPairs() {
                               className={`w-3.5 h-3.5 ${isFavorite ? 'fill-primary text-primary' : ''}`}
                             />
                           </button>
-                          <CryptoIcon symbol={market.baseAsset} />
                           <div className="min-w-0">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="font-semibold text-xs" data-testid={`text-symbol-mobile-${market.symbol}`}>
