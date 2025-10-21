@@ -401,9 +401,25 @@ export class BotEngine extends EventEmitter {
         // Get current open orders
         const openOrders = await this.client.getOpenOrders(this.config.marketSymbol);
         
-        // Cancel stale orders
-        if (openOrders.length > 0) {
-          await this.client.cancelAllOrders(this.config.marketSymbol);
+        // Cancel only LIMIT orders (not TP/SL protection orders)
+        const limitOrders = openOrders.filter((order: any) => 
+          order.type === 'LIMIT' && 
+          order.type !== 'STOP_MARKET' && 
+          order.type !== 'TAKE_PROFIT_MARKET'
+        );
+        
+        if (limitOrders.length > 0) {
+          console.log(`[Bot ${this.botId}] Canceling ${limitOrders.length} LIMIT orders (keeping TP/SL protection orders active)`);
+          
+          // Cancel each limit order individually to preserve TP/SL orders
+          for (const order of limitOrders) {
+            try {
+              await this.client.cancelOrder(this.config.marketSymbol, order.orderId);
+            } catch (error: any) {
+              console.error(`[Bot ${this.botId}] Failed to cancel order ${order.orderId}:`, error.message);
+            }
+          }
+          
           await this.sleep(this.config.delayAfterCancel * 1000);
         }
 
