@@ -51,6 +51,7 @@ The frontend uses React and TypeScript with Vite, featuring a custom terminal-in
 - **Auto-Start Feature**: Bots automatically start trading after creation.
 - **Bot Parameter Editing**: Running bots can be edited without stopping them.
 - **Auto-Close Positions on Stop**: Open positions are automatically closed when a bot is stopped.
+- **Trading Bias System**: Bots fully respect `tradingBias` ('neutral', 'long', 'short') and `longBiasPercent` settings. Long bias places more buy orders, short bias places more sell orders, and neutral uses 50/50 or custom percentage distribution. Bot logs show active bias configuration on each trading loop.
 
 ### System Design Choices
 - **Investment Model**: Uses a total investment budget approach (`investmentUsdt`) where order sizes are dynamically calculated to fit within this budget, accounting for leverage and meeting exchange minimum notional requirements.
