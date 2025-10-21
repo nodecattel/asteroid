@@ -5,9 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Shield, Terminal } from "lucide-react";
 import { queryClient } from "@/lib/queryClient";
 import Footer from "@/components/Footer";
+import asteroidLogo from "@assets/asteroid_1761014274709.png";
 
 export default function Login() {
   const [, setLocation] = useLocation();
@@ -60,9 +60,13 @@ export default function Login() {
       <div className="flex-1 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="space-y-1 text-center">
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <Terminal className="h-8 w-8" />
-              <Shield className="h-8 w-8 text-primary" />
+            <div className="flex items-center justify-center mb-6">
+              <img 
+                src={asteroidLogo} 
+                alt="Astroid Logo" 
+                className="h-20 w-20 sm:h-24 sm:w-24"
+                data-testid="img-astroid-logo"
+              />
             </div>
             <CardTitle className="text-2xl font-bold">Astroid</CardTitle>
             <CardDescription>

@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
+import asteroidLogo from "@assets/asteroid_1761014274709.png";
 
 interface StatusBarProps {
   botStatus: "running" | "paused" | "stopped" | "error";
@@ -42,6 +43,12 @@ export default function StatusBar({
       <div className="flex items-center justify-between px-4 sm:px-6 py-2 sm:py-3">
         <div className="flex items-center gap-2 sm:gap-6">
           <div className="flex items-center gap-2 sm:gap-3">
+            <img 
+              src={asteroidLogo} 
+              alt="Astroid" 
+              className="h-6 w-6 sm:h-7 sm:w-7"
+              data-testid="img-astroid-logo-header"
+            />
             <div className={`h-2 w-2 rounded-full ${config.color} animate-pulse`} />
             <div className="flex items-center gap-1.5 sm:gap-2">
               <StatusIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" data-testid="icon-status" />

@@ -3,6 +3,8 @@
 ## Overview
 Astroid is a trading bot for Aster Dex cryptocurrency exchange, designed to automate trading volume generation. It supports multiple bot instances, each managing a specific market pair, and features a real-time, terminal-inspired dashboard for monitoring and configuration. The project includes password-based authentication, centralized API credential management, and comprehensive security measures. It aims to be a robust, efficient, and user-friendly platform for automated volume generation, with dynamic market loading and Docker-based deployment.
 
+**Branding**: Features custom Astroid logo (white asteroid with rings) prominently displayed on login page, dashboard header, and as favicon. Logo file: `attached_assets/asteroid_1761014274709.png`.
+
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
@@ -10,6 +12,8 @@ Preferred communication style: Simple, everyday language.
 
 ### UI/UX Decisions
 The frontend uses React and TypeScript with Vite, featuring a custom terminal-inspired monochrome design. It leverages `shadcn/ui` components based on Radix UI primitives, styled with Tailwind CSS, emphasizing dark mode and strategic accent colors (green for positive, red for negative). Key components include `StatusBar`, `MetricCard`, `OrdersTable`, `ActivityFeed`, `VolumeChart`, `BotSelector`, and `ConfigPanel`. The interface is designed to be mobile-responsive.
+
+**Logo Integration**: Astroid logo appears on login page (large, centered above title), dashboard StatusBar (small, left side), and as favicon. Logo is a white asteroid/planet with rings on transparent background, perfectly matching the dark monochrome theme.
 
 ### Technical Implementations
 **Frontend**:
