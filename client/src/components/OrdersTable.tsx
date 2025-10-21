@@ -1,4 +1,5 @@
-import { X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { X, Pause, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatCryptoPrice } from "@/lib/utils";
@@ -15,14 +16,53 @@ export interface Order {
 interface OrdersTableProps {
   orders: Order[];
   onCancelOrder: (orderId: string) => void;
+  maxHeight?: string;
 }
 
-export default function OrdersTable({ orders, onCancelOrder }: OrdersTableProps) {
+export default function OrdersTable({ orders, onCancelOrder, maxHeight = "400px" }: OrdersTableProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [autoScroll, setAutoScroll] = useState(true);
+
+  useEffect(() => {
+    if (scrollRef.current && autoScroll) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [orders, autoScroll]);
+
   return (
     <div className="border border-border rounded-md overflow-hidden">
-      <div className="overflow-x-auto">
+      <div className="flex items-center justify-between px-4 py-2 bg-muted/30 border-b border-border">
+        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+          Recent Orders ({orders.length})
+        </span>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setAutoScroll(!autoScroll)}
+          className="h-6 px-2"
+          data-testid="button-toggle-orders-autoscroll"
+        >
+          {autoScroll ? (
+            <>
+              <Pause className="w-3 h-3 mr-1" />
+              <span className="text-xs">Pause</span>
+            </>
+          ) : (
+            <>
+              <Play className="w-3 h-3 mr-1" />
+              <span className="text-xs">Resume</span>
+            </>
+          )}
+        </Button>
+      </div>
+      
+      <div 
+        ref={scrollRef}
+        className="overflow-auto"
+        style={{ maxHeight }}
+      >
         <table className="w-full">
-          <thead className="bg-muted/50 sticky top-0">
+          <thead className="bg-muted/50 sticky top-0 z-10">
             <tr className="border-b border-border">
               <th className="px-4 py-2 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                 Time
@@ -91,6 +131,7 @@ export default function OrdersTable({ orders, onCancelOrder }: OrdersTableProps)
           </tbody>
         </table>
       </div>
+      
       {orders.length === 0 && (
         <div className="py-12 text-center text-muted-foreground">
           <p className="text-sm">No active orders</p>

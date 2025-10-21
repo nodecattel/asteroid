@@ -76,6 +76,7 @@ export default function Dashboard() {
 
     socket.on('orderUpdated', (data: any) => {
       if (data.botId === selectedBotId) {
+        queryClient.invalidateQueries({ queryKey: ['/api/bots', selectedBotId] });
         queryClient.invalidateQueries({ queryKey: ['/api/bots', selectedBotId, 'trades'] });
       }
     });
@@ -126,14 +127,17 @@ export default function Dashboard() {
   };
 
   const instance: BotInstance | undefined = selectedBot;
-  const orders: Order[] = (details?.data?.orders || []).map((o: any) => ({
-    id: o.id,
-    time: new Date(o.createdAt).toLocaleTimeString(),
-    side: o.side,
-    price: o.price,
-    quantity: o.quantity,
-    status: o.status,
-  })).slice(0, 10);
+  const orders: Order[] = (details?.data?.orders || [])
+    .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 20)
+    .map((o: any) => ({
+      id: o.id,
+      time: new Date(o.createdAt).toLocaleTimeString(),
+      side: o.side,
+      price: o.price,
+      quantity: o.quantity,
+      status: o.status,
+    }));
 
   const logs: ActivityLog[] = (details?.data?.logs || []).map((log: any) => ({
     id: log.id,
@@ -280,12 +284,7 @@ export default function Dashboard() {
 
             {/* Orders Table */}
             {orders.length > 0 && (
-              <div className="space-y-3">
-                <h2 className="text-xs font-medium text-muted-foreground uppercase tracking-wider px-1">
-                  Recent Orders
-                </h2>
-                <OrdersTable orders={orders} onCancelOrder={handleCancelOrder} />
-              </div>
+              <OrdersTable orders={orders} onCancelOrder={handleCancelOrder} />
             )}
 
             {/* Trades History */}
