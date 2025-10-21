@@ -114,21 +114,36 @@ export class BotEngine extends EventEmitter {
       );
 
       if (symbolInfo) {
-        this.pricePrecision = symbolInfo.pricePrecision || 2;
-        this.quantityPrecision = symbolInfo.quantityPrecision || 6;
-        
         // Extract filters for tick size, step size, and min notional
         if (symbolInfo.filters && Array.isArray(symbolInfo.filters)) {
           const priceFilter = symbolInfo.filters.find((f: any) => f.filterType === 'PRICE_FILTER');
           if (priceFilter && priceFilter.tickSize) {
-            this.tickSize = parseFloat(priceFilter.tickSize);
-            console.log(`[Bot ${this.botId}] Tick size: ${this.tickSize}`);
+            const tickSizeStr = priceFilter.tickSize.toString();
+            this.tickSize = parseFloat(tickSizeStr);
+            
+            // Calculate price precision from tickSize decimal places
+            if (tickSizeStr.includes('.')) {
+              this.pricePrecision = tickSizeStr.split('.')[1].replace(/0+$/, '').length;
+            } else {
+              this.pricePrecision = 0;
+            }
+            
+            console.log(`[Bot ${this.botId}] Tick size: ${this.tickSize}, Price precision: ${this.pricePrecision}`);
           }
           
           const lotSizeFilter = symbolInfo.filters.find((f: any) => f.filterType === 'LOT_SIZE');
           if (lotSizeFilter && lotSizeFilter.stepSize) {
-            this.stepSize = parseFloat(lotSizeFilter.stepSize);
-            console.log(`[Bot ${this.botId}] Step size: ${this.stepSize}`);
+            const stepSizeStr = lotSizeFilter.stepSize.toString();
+            this.stepSize = parseFloat(stepSizeStr);
+            
+            // Calculate quantity precision from stepSize decimal places
+            if (stepSizeStr.includes('.')) {
+              this.quantityPrecision = stepSizeStr.split('.')[1].replace(/0+$/, '').length;
+            } else {
+              this.quantityPrecision = 0;
+            }
+            
+            console.log(`[Bot ${this.botId}] Step size: ${this.stepSize}, Quantity precision: ${this.quantityPrecision}`);
           }
           
           const minNotionalFilter = symbolInfo.filters.find((f: any) => f.filterType === 'MIN_NOTIONAL');
@@ -138,7 +153,7 @@ export class BotEngine extends EventEmitter {
           }
         }
         
-        await this.addLog('info', `Filters: Tick ${this.tickSize}, Step ${this.stepSize}, Min ${this.minNotional} USDT`);
+        await this.addLog('info', `Precision: Price ${this.pricePrecision} decimals (tick: ${this.tickSize}), Qty ${this.quantityPrecision} decimals (step: ${this.stepSize}), Min: ${this.minNotional} USDT`);
       }
 
       // Get commission rates
