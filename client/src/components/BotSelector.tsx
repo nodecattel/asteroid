@@ -342,14 +342,14 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
             <div className="space-y-4 sm:space-y-6">
               {/* Market Selection Section - Full Width */}
               <Card className="overflow-hidden">
-                <CardHeader className="pb-2 sm:pb-3">
+                <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-3">
                   <div className="flex items-center gap-2">
                     <TrendingUp className="w-5 h-5" />
                     <CardTitle className="text-lg">Market Selection</CardTitle>
                   </div>
                   <CardDescription>Choose trading pair and view market statistics</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-3 sm:p-6 pt-0">
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
                       <Label htmlFor="marketSymbol">Trading Pair</Label>
@@ -409,14 +409,14 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
 
               {/* Trading Configuration */}
               <Card className="overflow-hidden">
-                <CardHeader className="pb-2 sm:pb-3">
+                <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-3">
                   <div className="flex items-center gap-2">
                     <Settings className="w-5 h-5" />
                     <CardTitle className="text-lg">Trading Configuration</CardTitle>
                   </div>
                   <CardDescription>Set leverage and capital allocation</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-3 sm:p-6 pt-0">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between gap-2">
@@ -478,14 +478,14 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
 
               {/* Volume Targets */}
               <Card className="overflow-hidden">
-                <CardHeader className="pb-2 sm:pb-3">
+                <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-3">
                   <div className="flex items-center gap-2">
                     <Target className="w-5 h-5" />
                     <CardTitle className="text-lg">Volume Targets & Limits</CardTitle>
                   </div>
                   <CardDescription>Define trading volume goals and risk limits</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-3 sm:p-6 pt-0">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
@@ -560,14 +560,14 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
 
               {/* Strategy Parameters */}
               <Card className="overflow-hidden">
-                <CardHeader className="pb-2 sm:pb-3">
+                <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-3">
                   <div className="flex items-center gap-2">
                     <Zap className="w-5 h-5" />
                     <CardTitle className="text-lg">Strategy Parameters</CardTitle>
                   </div>
                   <CardDescription>Fine-tune order placement and trading behavior</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-3 sm:p-6 pt-0">
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <div className="space-y-2">
@@ -726,15 +726,15 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
               </Card>
 
               {/* Risk Management */}
-              <Card className="border-orange-500/20">
-                <CardHeader className="pb-3">
+              <Card className="border-orange-500/20 overflow-hidden">
+                <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-3">
                   <div className="flex items-center gap-2">
                     <Target className="w-5 h-5 text-orange-500" />
                     <CardTitle className="text-lg">Risk Management</CardTitle>
                   </div>
                   <CardDescription>Configure stop-loss, take-profit, trailing stops, and emergency protection</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-3 sm:p-6 pt-0">
                   <div className="space-y-4">
                     {/* Stop-Loss & Take-Profit */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
@@ -953,15 +953,15 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
           <TooltipProvider>
             <div className="space-y-4 sm:space-y-6">
               {/* Market Selection Section - Disabled for edit */}
-              <Card>
-                <CardHeader className="pb-3">
+              <Card className="overflow-hidden">
+                <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-3">
                   <div className="flex items-center gap-2">
                     <TrendingUp className="w-5 h-5" />
                     <CardTitle className="text-lg">Market (Read-Only)</CardTitle>
                   </div>
                   <CardDescription>Market cannot be changed after bot creation</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-3 sm:p-6 pt-0">
                   <Input
                     value={formData.marketSymbol}
                     disabled
@@ -971,15 +971,15 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
               </Card>
 
               {/* Trading Configuration - Copy from create dialog */}
-              <Card>
-                <CardHeader className="pb-3">
+              <Card className="overflow-hidden">
+                <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-3">
                   <div className="flex items-center gap-2">
                     <Settings className="w-5 h-5" />
                     <CardTitle className="text-lg">Trading Configuration</CardTitle>
                   </div>
                   <CardDescription>Set leverage and capital allocation</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-3 sm:p-6 pt-0">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between gap-2">
@@ -1039,14 +1039,14 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
 
               {/* Key parameters only for edit (show less than create) */}
               <Card className="overflow-hidden">
-                <CardHeader className="pb-2 sm:pb-3">
+                <CardHeader className="p-3 sm:p-6 pb-2 sm:pb-3">
                   <div className="flex items-center gap-2">
                     <Zap className="w-5 h-5" />
                     <CardTitle className="text-lg">Key Parameters</CardTitle>
                   </div>
                   <CardDescription>Essential trading and risk parameters</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-3 sm:p-6 pt-0">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="edit-spread">Spread (bps)</Label>
