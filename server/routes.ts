@@ -185,6 +185,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get open orders (protected)
+  app.get('/api/account/orders', requireAuth, async (req, res) => {
+    try {
+      const { symbol } = req.query;
+      const apiKey = process.env.ASTERDEX_API_KEY;
+      const apiSecret = process.env.ASTERDEX_API_SECRET;
+
+      if (!apiKey || !apiSecret) {
+        return res.status(400).json({
+          success: false,
+          error: 'ASTERDEX_API_KEY and ASTERDEX_API_SECRET must be set in environment variables'
+        });
+      }
+
+      const client = new AsterdexClient(apiKey, apiSecret);
+      const orders = await client.getOpenOrders(symbol as string);
+      
+      res.json({
+        success: true,
+        data: orders
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
   // Close position manually (protected)
   app.post('/api/account/close-position', requireAuth, async (req, res) => {
     try {

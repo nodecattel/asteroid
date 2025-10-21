@@ -26,6 +26,16 @@ interface Balance {
   assets: any[];
 }
 
+interface Order {
+  symbol: string;
+  orderId: number;
+  type: string;
+  side: string;
+  stopPrice?: string;
+  price?: string;
+  closePosition?: boolean;
+}
+
 export default function AccountInfo() {
   const { toast } = useToast();
 
@@ -39,6 +49,13 @@ export default function AccountInfo() {
   const { data: positionsData, isLoading: positionsLoading } = useQuery<{ success: boolean; data: Position[] }>({
     queryKey: ['/api/account/positions'],
     refetchInterval: 3000, // Refresh every 3 seconds
+  });
+
+  // Fetch open orders for all positions
+  const { data: ordersData } = useQuery<{ success: boolean; data: Order[] }>({
+    queryKey: ['/api/account/orders'],
+    refetchInterval: 3000, // Refresh every 3 seconds
+    enabled: !!positionsData?.data && positionsData.data.length > 0,
   });
 
   // Close position mutation
@@ -65,10 +82,19 @@ export default function AccountInfo() {
 
   const balance = balanceData?.data;
   const positions = positionsData?.data || [];
+  const orders = ordersData?.data || [];
   
   const totalWalletBalance = parseFloat(balance?.totalWalletBalance || '0');
   const availableBalance = parseFloat(balance?.availableBalance || '0');
   const unrealizedPnL = parseFloat(balance?.totalUnrealizedProfit || '0');
+
+  // Helper function to find TP/SL orders for a position
+  const getProtectionOrders = (symbol: string) => {
+    const symbolOrders = orders.filter(order => order.symbol === symbol);
+    const stopLoss = symbolOrders.find(order => order.type === 'STOP_MARKET');
+    const takeProfit = symbolOrders.find(order => order.type === 'TAKE_PROFIT_MARKET');
+    return { stopLoss, takeProfit };
+  };
 
   if (balanceError) {
     return (
@@ -169,6 +195,9 @@ export default function AccountInfo() {
                 const leverage = parseFloat(position.leverage);
                 const marginUsed = positionValue / leverage; // Margin used
                 const marginType = position.isolated ? 'Isolated' : 'Cross';
+                
+                // Get TP/SL orders for this position
+                const { stopLoss, takeProfit } = getProtectionOrders(position.symbol);
 
                 return (
                   <div 
@@ -225,6 +254,22 @@ export default function AccountInfo() {
                         <div className="text-muted-foreground">Mark Price</div>
                         <div className="font-mono">${formatCryptoPrice(markPrice)}</div>
                       </div>
+                      {stopLoss && (
+                        <div>
+                          <div className="text-muted-foreground">Stop Loss</div>
+                          <div className="font-mono text-red-500" data-testid={`text-sl-${position.symbol}`}>
+                            ${formatCryptoPrice(parseFloat(stopLoss.stopPrice || '0'))}
+                          </div>
+                        </div>
+                      )}
+                      {takeProfit && (
+                        <div>
+                          <div className="text-muted-foreground">Take Profit</div>
+                          <div className="font-mono text-green-500" data-testid={`text-tp-${position.symbol}`}>
+                            ${formatCryptoPrice(parseFloat(takeProfit.stopPrice || '0'))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
