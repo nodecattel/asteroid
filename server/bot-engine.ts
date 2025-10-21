@@ -969,13 +969,47 @@ export class BotEngine extends EventEmitter {
   }
 
   private async closeAllPositions(): Promise<void> {
-    for (const [positionId, position] of this.positions) {
-      await this.closePosition(position);
-      await this.cancelProtectionOrders(positionId, position);
+    try {
+      // First, close tracked positions
+      for (const [positionId, position] of this.positions) {
+        await this.closePosition(position);
+        await this.cancelProtectionOrders(positionId, position);
+      }
+      
+      // Clear tracked positions
+      this.positions.clear();
+      this.netPosition = 0;
+      
+      // Also query and close any actual account positions for this symbol
+      // (in case positions exist from previous sessions or weren't tracked)
+      const positionRisk = await this.client.getPositionRisk(this.config.marketSymbol);
+      
+      for (const pos of positionRisk) {
+        const positionAmt = parseFloat(pos.positionAmt || '0');
+        
+        if (Math.abs(positionAmt) > 0.00001) {
+          // There's an open position - close it
+          const side = positionAmt > 0 ? 'SELL' : 'BUY'; // Close LONG with SELL, SHORT with BUY
+          const quantity = this.formatQuantity(Math.abs(positionAmt));
+          
+          try {
+            await this.client.placeOrder({
+              symbol: this.config.marketSymbol,
+              side: side,
+              type: 'MARKET',
+              quantity: quantity,
+            });
+            
+            await this.addLog('info', `Closed ${positionAmt > 0 ? 'LONG' : 'SHORT'} position: ${Math.abs(positionAmt)} contracts`);
+          } catch (error: any) {
+            await this.addLog('error', `Failed to close position ${this.config.marketSymbol}: ${error.message}`);
+          }
+        }
+      }
+    } catch (error: any) {
+      console.error('Error closing all positions:', error);
+      await this.addLog('error', `Error closing positions: ${error.message}`);
     }
-    
-    this.positions.clear();
-    this.netPosition = 0;
   }
 
   // ===== END POSITION TRACKING & RISK MANAGEMENT =====
