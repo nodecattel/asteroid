@@ -182,9 +182,8 @@ export default function Dashboard() {
     ? (stats.totalVolume / selectedBot.config.targetVolume) * 100
     : 0;
 
-  const hourlyRate = stats.sessionUptime > 0
-    ? (stats.totalVolume / (stats.sessionUptime / 3600))
-    : 0;
+  // Use actual hourly volume from exchange trades (last 60 minutes)
+  const hourlyRate = stats.hourlyVolume || 0;
 
   // Fetch market info to get max leverage
   const { data: marketsData } = useQuery<{ success: boolean; data: Array<{
