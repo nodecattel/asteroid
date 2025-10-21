@@ -168,10 +168,10 @@ export default function Dashboard() {
     { label: "Target Volume", value: `$${selectedBot.config.targetVolume.toLocaleString()}`, category: "Targets" },
     { label: "Target Hours", value: `${selectedBot.config.targetHours}h`, category: "Targets" },
     { label: "Max Loss", value: `$${selectedBot.config.maxLoss.toFixed(2)}`, category: "Targets" },
-    { label: "Spread", value: `${selectedBot.config.spreadBps} bps`, category: "Strategy" },
+    { label: "First Order Spread", value: `${selectedBot.config.firstOrderSpreadBps} bps`, category: "Strategy" },
+    { label: "Order Spacing", value: `${selectedBot.config.orderSpacingBps} bps`, category: "Strategy" },
     { label: "Orders Per Side", value: `${selectedBot.config.ordersPerSide}`, category: "Strategy" },
-    { label: "Order Size", value: `${selectedBot.config.orderSizePercent}%`, category: "Strategy" },
-    { label: "Refresh Interval", value: `${selectedBot.config.refreshInterval}s`, category: "Strategy" },
+    { label: "Cycle Time", value: `${selectedBot.config.cycleTimeSeconds}s`, category: "Strategy" },
   ] : [];
 
   const handleCancelOrder = async (orderId: string) => {

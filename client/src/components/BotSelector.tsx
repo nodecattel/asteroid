@@ -66,7 +66,6 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
     firstOrderSpreadBps: 5,
     orderSpacingBps: 2,
     ordersPerSide: 3,
-    orderSizePercent: 25,
     cycleTimeSeconds: 5,
     refreshInterval: 60,
     tradingBias: 'neutral' as 'neutral' | 'long' | 'short',
@@ -630,7 +629,7 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
                               <Info className="w-4 h-4 text-muted-foreground cursor-help" />
                             </TooltipTrigger>
                             <TooltipContent className="max-w-xs">
-                              <p>Number of buy and sell orders to place simultaneously. More orders = better coverage</p>
+                              <p>Number of buy and sell orders to place simultaneously. More orders = better coverage. Margin is auto-distributed across all orders to maximize utilization.</p>
                             </TooltipContent>
                           </Tooltip>
                         </div>
@@ -642,30 +641,6 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot, initialS
                           max="20"
                           value={formData.ordersPerSide}
                           onChange={(e) => setFormData({ ...formData, ordersPerSide: Number(e.target.value) })}
-                          className="h-11"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Label htmlFor="orderSize">Order Size (%)</Label>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Info className="w-4 h-4 text-muted-foreground cursor-help" />
-                            </TooltipTrigger>
-                            <TooltipContent className="max-w-xs">
-                              <p>Percentage of effective capital per order (Effective Capital = Investment × Leverage)</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                        <Input
-                          id="orderSize"
-                          data-testid="input-order-size"
-                          type="number"
-                          step="0.01"
-                          min="0.01"
-                          max="100"
-                          value={formData.orderSizePercent}
-                          onChange={(e) => setFormData({ ...formData, orderSizePercent: Number(e.target.value) })}
                           className="h-11"
                         />
                       </div>

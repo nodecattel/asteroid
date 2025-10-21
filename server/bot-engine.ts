@@ -478,49 +478,25 @@ export class BotEngine extends EventEmitter {
         }
 
         // Calculate order size using margin-based risk model
-        // Total margin (your capital) to risk
+        // IMPROVED: Maximize margin utilization for better volume generation
         const totalBudget = this.config.marginUsdt;
-        
-        // Calculate how much notional value we want per order
-        // orderSizePercent now refers to % of total budget to use per order
-        const orderNotionalValue = (totalBudget * this.config.orderSizePercent) / 100;
-        
-        // With leverage, this notional value requires less margin
-        const marginRequiredPerOrder = orderNotionalValue / this.config.leverage;
-        
-        // Ensure margin required doesn't exceed budget
         const totalOrdersPlanned = this.config.ordersPerSide * 2; // buy + sell sides
-        const totalMarginRequired = marginRequiredPerOrder * totalOrdersPlanned;
         
-        if (totalMarginRequired > totalBudget) {
-          // Adjust order size to fit within budget
-          const adjustedMarginPerOrder = totalBudget / totalOrdersPlanned;
-          const adjustedNotional = adjustedMarginPerOrder * this.config.leverage;
-          const rawQuantity = adjustedNotional / referencePrice;
-          const quantity = this.formatQuantity(rawQuantity);
-          
-          console.log(`[Bot ${this.botId}] Budget-adjusted order: totalBudget=${totalBudget}, marginPerOrder=${adjustedMarginPerOrder.toFixed(2)}, notional=${adjustedNotional.toFixed(2)}, qty=${quantity}`);
-        } else {
-          const rawQuantity = orderNotionalValue / referencePrice;
-          const quantity = this.formatQuantity(rawQuantity);
-          
-          console.log(`[Bot ${this.botId}] Order calculation: totalBudget=${totalBudget}, notional=${orderNotionalValue.toFixed(2)}, marginRequired=${marginRequiredPerOrder.toFixed(2)}, qty=${quantity}`);
-        }
+        // Distribute margin equally across all orders to maximize utilization
+        const marginPerOrder = totalBudget / totalOrdersPlanned;
         
-        // Final quantity calculation with budget constraints
-        const finalOrderNotional = Math.min(
-          orderNotionalValue,
-          (totalBudget / totalOrdersPlanned) * this.config.leverage
-        );
+        // Calculate notional value per order using leverage
+        const notionalPerOrder = marginPerOrder * this.config.leverage;
+        
+        console.log(`[Bot ${this.botId}] 💰 Margin utilization: Budget=${totalBudget} USDT, Orders=${totalOrdersPlanned}, Margin/order=${marginPerOrder.toFixed(2)} USDT, Notional/order=${notionalPerOrder.toFixed(2)} USDT (${this.config.leverage}x leverage)`);
         
         // Calculate minimum notional needed to produce at least 1 step size unit
-        // This ensures quantity doesn't round to zero for high-priced assets
         const minQuantityNeeded = this.stepSize;
         const minNotionalForQuantity = minQuantityNeeded * referencePrice;
         
         // Use the largest of: calculated notional, exchange min notional, or notional needed for valid quantity
         const effectiveNotional = Math.max(
-          finalOrderNotional,
+          notionalPerOrder,
           this.minNotional * 1.1,  // 10% above exchange minimum
           minNotionalForQuantity * 1.5  // 50% above minimum to ensure rounding works
         );
@@ -528,7 +504,13 @@ export class BotEngine extends EventEmitter {
         const rawQuantity = effectiveNotional / referencePrice;
         const quantity = this.formatQuantity(rawQuantity);
         
-        console.log(`[Bot ${this.botId}] Final order: notional=${effectiveNotional.toFixed(2)} USDT, quantity=${quantity}, marginPerOrder=${(effectiveNotional/this.config.leverage).toFixed(2)} USDT`);
+        // Calculate actual margin usage
+        const actualMarginPerOrder = effectiveNotional / this.config.leverage;
+        const totalMarginUsed = actualMarginPerOrder * totalOrdersPlanned;
+        const utilizationPercent = (totalMarginUsed / totalBudget) * 100;
+        
+        console.log(`[Bot ${this.botId}] 📊 Order size: Notional=${effectiveNotional.toFixed(2)} USDT, Quantity=${quantity}, Margin/order=${actualMarginPerOrder.toFixed(2)} USDT`);
+        console.log(`[Bot ${this.botId}] 🎯 Total margin: ${totalMarginUsed.toFixed(2)} USDT / ${totalBudget.toFixed(2)} USDT (${utilizationPercent.toFixed(1)}% utilization)`);
         
         // Check for zero quantity
         if (parseFloat(quantity) === 0 || isNaN(parseFloat(quantity))) {
@@ -546,10 +528,11 @@ export class BotEngine extends EventEmitter {
           continue;
         }
         
-        // Check if total margin required would exceed budget
-        const totalMarginNeeded = (effectiveNotional / this.config.leverage) * totalOrdersPlanned;
-        if (totalMarginNeeded > totalBudget * 1.1) { // Allow 10% tolerance
-          await this.addLog('warning', `⚠️ Orders require ${totalMarginNeeded.toFixed(2)} USDT margin but budget is ${totalBudget.toFixed(2)} USDT. Consider increasing investment or reducing orders/leverage.`);
+        // Warn if we're exceeding budget significantly (should be rare now)
+        if (utilizationPercent > 110) {
+          await this.addLog('warning', `⚠️ Margin utilization ${utilizationPercent.toFixed(1)}% exceeds budget due to exchange minimums. Consider increasing margin or reducing orders.`);
+        } else if (utilizationPercent > 95) {
+          await this.addLog('info', `✅ High margin utilization: ${utilizationPercent.toFixed(1)}% of ${totalBudget.toFixed(2)} USDT budget`);
         }
 
         // Calculate order distribution based on tradingBias and longBiasPercent
