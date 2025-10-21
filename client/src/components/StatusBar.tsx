@@ -7,6 +7,8 @@ interface StatusBarProps {
   market: string;
   sessionTime: string;
   connectionStatus: "connected" | "disconnected";
+  fundingRate?: number;
+  maxLeverage?: number;
   onPauseResume: () => void;
   onSettings: () => void;
 }
@@ -16,6 +18,8 @@ export default function StatusBar({
   market,
   sessionTime,
   connectionStatus,
+  fundingRate,
+  maxLeverage,
   onPauseResume,
   onSettings,
 }: StatusBarProps) {
@@ -48,9 +52,25 @@ export default function StatusBar({
           
           <div className="flex items-center gap-1.5 sm:gap-2">
             <span className="text-xs text-muted-foreground uppercase tracking-wider hidden sm:inline">Market</span>
-            <Badge variant="outline" className="font-mono text-xs" data-testid="badge-market">
-              {market}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="font-mono text-xs" data-testid="badge-market">
+                {market}
+              </Badge>
+              {maxLeverage && (
+                <Badge variant="secondary" className="text-xs hidden md:inline-flex">
+                  Max {maxLeverage}x
+                </Badge>
+              )}
+              {fundingRate !== undefined && fundingRate !== null && (
+                <Badge 
+                  variant={fundingRate >= 0 ? "default" : "destructive"} 
+                  className="text-xs hidden lg:inline-flex"
+                  data-testid="badge-funding-rate"
+                >
+                  Funding: {(fundingRate * 100).toFixed(4)}%
+                </Badge>
+              )}
+            </div>
           </div>
           
           <div className="h-4 w-px bg-border hidden md:block" />

@@ -145,6 +145,13 @@ export class BotManager extends EventEmitter {
     const orders = await storage.getOrdersByBot(botId);
     const logs = await storage.getActivityLogs(botId, 100);
     const hourlyVolume = await storage.getHourlyVolume(botId);
+    
+    // Get market data from running bot (if available)
+    let marketData = null;
+    const bot = this.bots.get(botId);
+    if (bot) {
+      marketData = bot.getMarketData();
+    }
 
     return {
       instance,
@@ -152,6 +159,7 @@ export class BotManager extends EventEmitter {
       orders,
       logs,
       hourlyVolume,
+      marketData,
     };
   }
 

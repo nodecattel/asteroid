@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Play, Pause, Square, Trash2, Info, TrendingUp, Target, Settings, Zap } from "lucide-react";
+import { Plus, Play, Pause, Square, Trash2, Info, TrendingUp, Target, Settings, Zap, Pencil } from "lucide-react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -21,6 +21,7 @@ interface BotSelectorProps {
 
 export default function BotSelector({ bots, selectedBotId, onSelectBot }: BotSelectorProps) {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const { toast } = useToast();
 
   // Fetch available markets from exchange info
@@ -161,8 +162,31 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot }: BotSel
     },
   });
 
+  const updateBotMutation = useMutation({
+    mutationFn: async ({ botId, config }: { botId: string; config: any }) => {
+      const res = await apiRequest('PATCH', `/api/bots/${botId}/config`, config);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/bots'] });
+      setIsEditOpen(false);
+      toast({ title: "Bot updated successfully" });
+    },
+    onError: (error: Error) => {
+      toast({ title: "Failed to update bot", description: error.message, variant: "destructive" });
+    },
+  });
+
   const selectedBotData = bots.find((b: any) => b.id === selectedBotId);
   const selectedBotStatus = selectedBotData?.status;
+  
+  // Pre-fill edit form when opening edit dialog
+  const handleOpenEdit = () => {
+    if (selectedBotData?.config) {
+      setFormData(selectedBotData.config);
+      setIsEditOpen(true);
+    }
+  };
 
   return (
     <div className="flex items-center gap-3 flex-wrap">
@@ -183,6 +207,16 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot }: BotSel
 
       {selectedBotId && (
         <>
+          <Button
+            data-testid="button-edit-bot"
+            size="sm"
+            variant="outline"
+            onClick={handleOpenEdit}
+          >
+            <Pencil className="w-4 h-4 mr-2" />
+            Edit
+          </Button>
+          
           {selectedBotStatus === 'stopped' && (
             <Button
               data-testid="button-start-bot"
@@ -836,6 +870,179 @@ export default function BotSelector({ bots, selectedBotId, onSelectBot }: BotSel
                 disabled={createBotMutation.isPending}
               >
                 {createBotMutation.isPending ? 'Creating Bot...' : 'Create Trading Bot'}
+              </Button>
+            </div>
+          </TooltipProvider>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Bot Dialog - Same as Create but with disabled market selector and update mutation */}
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto font-mono">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">Edit Bot Configuration</DialogTitle>
+            <DialogDescription>
+              Modify parameters for {selectedBotData?.marketSymbol} bot (running bots will apply changes immediately)
+            </DialogDescription>
+          </DialogHeader>
+          
+          <TooltipProvider>
+            <div className="space-y-6">
+              {/* Market Selection Section - Disabled for edit */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5" />
+                    <CardTitle className="text-lg">Market (Read-Only)</CardTitle>
+                  </div>
+                  <CardDescription>Market cannot be changed after bot creation</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Input
+                    value={formData.marketSymbol}
+                    disabled
+                    className="text-base h-11 font-bold"
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Trading Configuration - Copy from create dialog */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2">
+                    <Settings className="w-5 h-5" />
+                    <CardTitle className="text-lg">Trading Configuration</CardTitle>
+                  </div>
+                  <CardDescription>Set leverage and capital allocation</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <Label htmlFor="edit-leverage">Leverage</Label>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Info className="w-4 h-4 text-muted-foreground cursor-help" />
+                            </TooltipTrigger>
+                            <TooltipContent className="max-w-xs">
+                              <p>Leverage multiplier for your positions. Higher leverage = higher risk. Current market max: {maxLeverage}x</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <Badge variant="secondary" className="text-xs">
+                          Max {maxLeverage}x
+                        </Badge>
+                      </div>
+                      <Input
+                        id="edit-leverage"
+                        type="number"
+                        min="1"
+                        max={maxLeverage}
+                        value={formData.leverage}
+                        onChange={(e) => {
+                          const val = Math.min(Number(e.target.value), maxLeverage);
+                          setFormData({ ...formData, leverage: val });
+                        }}
+                        className="text-base h-11"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Label htmlFor="edit-investment">Investment (USDT)</Label>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="w-4 h-4 text-muted-foreground cursor-help" />
+                          </TooltipTrigger>
+                          <TooltipContent className="max-w-xs">
+                            <p>Base capital in USDT. Effective capital = Investment × Leverage</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                      <Input
+                        id="edit-investment"
+                        type="number"
+                        step="0.01"
+                        min="0.01"
+                        value={formData.investmentUsdt}
+                        onChange={(e) => setFormData({ ...formData, investmentUsdt: Number(e.target.value) })}
+                        className="text-base h-11"
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Key parameters only for edit (show less than create) */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-5 h-5" />
+                    <CardTitle className="text-lg">Key Parameters</CardTitle>
+                  </div>
+                  <CardDescription>Essential trading and risk parameters</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-spread">Spread (bps)</Label>
+                      <Input
+                        id="edit-spread"
+                        type="number"
+                        step="0.1"
+                        min="0.1"
+                        value={formData.spreadBps}
+                        onChange={(e) => setFormData({ ...formData, spreadBps: Number(e.target.value) })}
+                        className="h-11"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-orders-per-side">Orders/Side</Label>
+                      <Input
+                        id="edit-orders-per-side"
+                        type="number"
+                        min="1"
+                        value={formData.ordersPerSide}
+                        onChange={(e) => setFormData({ ...formData, ordersPerSide: Number(e.target.value) })}
+                        className="h-11"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-stop-loss">Stop Loss (%)</Label>
+                      <Input
+                        id="edit-stop-loss"
+                        type="number"
+                        step="0.1"
+                        min="0.1"
+                        value={formData.stopLossPercent}
+                        onChange={(e) => setFormData({ ...formData, stopLossPercent: Number(e.target.value) })}
+                        className="h-11"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="edit-take-profit">Take Profit (%)</Label>
+                      <Input
+                        id="edit-take-profit"
+                        type="number"
+                        step="0.1"
+                        min="0.1"
+                        value={formData.takeProfitPercent}
+                        onChange={(e) => setFormData({ ...formData, takeProfitPercent: Number(e.target.value) })}
+                        className="h-11"
+                      />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Separator />
+
+              <Button
+                className="w-full h-12 text-base"
+                onClick={() => selectedBotId && updateBotMutation.mutate({ botId: selectedBotId, config: formData })}
+                disabled={updateBotMutation.isPending}
+              >
+                {updateBotMutation.isPending ? 'Updating Bot...' : 'Save Changes'}
               </Button>
             </div>
           </TooltipProvider>

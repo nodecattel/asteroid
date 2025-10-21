@@ -157,6 +157,21 @@ export default function Dashboard() {
     ? (stats.totalVolume / (stats.sessionUptime / 3600))
     : 0;
 
+  // Fetch market info to get max leverage
+  const { data: marketsData } = useQuery<{ success: boolean; data: Array<{
+    symbol: string;
+    maxLeverage?: number;
+  }> }>({
+    queryKey: ['/api/markets'],
+    refetchInterval: 5 * 60 * 1000,
+  });
+  
+  // Extract market data
+  const marketData = details?.data?.marketData;
+  const fundingRate = marketData?.fundingRate;
+  const selectedMarket = marketsData?.data?.find(m => m.symbol === selectedBot?.marketSymbol);
+  const maxLeverage = selectedMarket?.maxLeverage;
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <StatusBar
@@ -164,6 +179,8 @@ export default function Dashboard() {
         market={selectedBot?.marketSymbol || "N/A"}
         sessionTime={sessionTime}
         connectionStatus="connected"
+        fundingRate={fundingRate}
+        maxLeverage={maxLeverage}
         onPauseResume={() => {}}
         onSettings={() => {}}
       />
