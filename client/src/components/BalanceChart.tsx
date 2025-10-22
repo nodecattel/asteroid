@@ -1,22 +1,43 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { BalanceHistory } from "@shared/schema";
 import { TrendingUp, TrendingDown } from "lucide-react";
+import { AI_PROVIDER_COLORS } from "./AIProviderIcon";
 
 interface BalanceChartProps {
   history: BalanceHistory[];
 }
 
+// Function to extract provider from source name (format: "Agent: Provider - Model")
+function getProviderFromSource(sourceName: string): string | null {
+  const match = sourceName.match(/Agent: ([^-]+)/);
+  return match ? match[1].trim() : null;
+}
+
+// Function to get brand color for a balance history item
+function getBrandColor(item: BalanceHistory): string {
+  if (item.source === 'agent') {
+    const provider = getProviderFromSource(item.sourceName);
+    if (provider && AI_PROVIDER_COLORS[provider]) {
+      return AI_PROVIDER_COLORS[provider];
+    }
+  }
+  // Default to primary color for bots and unknown sources
+  return 'hsl(var(--primary))';
+}
+
 export default function BalanceChart({ history }: BalanceChartProps) {
   const chartData = [...history]
     .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
-    .map(item => ({
+    .map((item, index) => ({
       time: new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       balance: item.balance,
       change: item.change,
       icon: item.sourceIcon || '📊',
       name: item.sourceName,
       source: item.source,
+      color: getBrandColor(item),
+      index,
     }));
 
   const latestBalance = history.length > 0 ? history[0].balance : 0;
@@ -44,6 +65,35 @@ export default function BalanceChart({ history }: BalanceChartProps) {
       );
     }
     return null;
+  };
+
+  // Custom dot component to render different colors based on source
+  const CustomDot = (props: any) => {
+    const { cx, cy, payload } = props;
+    return (
+      <circle
+        cx={cx}
+        cy={cy}
+        r={4}
+        fill={payload.color}
+        stroke="none"
+      />
+    );
+  };
+
+  // Custom active dot component
+  const CustomActiveDot = (props: any) => {
+    const { cx, cy, payload } = props;
+    return (
+      <circle
+        cx={cx}
+        cy={cy}
+        r={6}
+        fill={payload.color}
+        stroke="hsl(var(--background))"
+        strokeWidth={2}
+      />
+    );
   };
 
   return (
@@ -85,10 +135,11 @@ export default function BalanceChart({ history }: BalanceChartProps) {
                 <Line
                   type="monotone"
                   dataKey="balance"
-                  stroke="hsl(var(--primary))"
+                  stroke={(entry: any) => entry.color || 'hsl(var(--primary))'}
                   strokeWidth={2}
-                  dot={{ fill: 'hsl(var(--primary))', r: 4 }}
-                  activeDot={{ r: 6 }}
+                  dot={<CustomDot />}
+                  activeDot={<CustomActiveDot />}
+                  connectNulls
                 />
               </LineChart>
             </ResponsiveContainer>

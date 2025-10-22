@@ -581,7 +581,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           provider: 'Anthropic',
           models: ['Claude 3.5 Sonnet', 'Claude 3 Opus', 'Claude 3 Sonnet', 'Claude 3 Haiku'],
           defaultModel: 'Claude 3.5 Sonnet',
-          icon: '🤖',
+          brandColor: '#D97757',
         });
       }
       
@@ -590,7 +590,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           provider: 'OpenAI',
           models: ['GPT-4', 'GPT-4 Turbo', 'GPT-4o', 'GPT-3.5 Turbo'],
           defaultModel: 'GPT-4',
-          icon: '🧠',
+          brandColor: '#10A37F',
         });
       }
       
@@ -599,7 +599,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           provider: 'DeepSeek',
           models: ['DeepSeek Chat V3.1', 'DeepSeek Coder V2'],
           defaultModel: 'DeepSeek Chat V3.1',
-          icon: '🔍',
+          brandColor: '#0066FF',
         });
       }
       
@@ -608,7 +608,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           provider: 'xAI',
           models: ['Grok 2', 'Grok 1.5'],
           defaultModel: 'Grok 2',
-          icon: '⚡',
+          brandColor: '#000000',
         });
       }
       
@@ -617,7 +617,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           provider: 'Alibaba',
           models: ['Qwen Max', 'Qwen Plus', 'Qwen Turbo'],
           defaultModel: 'Qwen Max',
-          icon: '🌐',
+          brandColor: '#FF6A00',
         });
       }
       

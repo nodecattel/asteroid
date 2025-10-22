@@ -18,6 +18,7 @@ import { z } from "zod";
 import StatusBar from "@/components/StatusBar";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { AIProviderIcon, AIProviderAvatar } from "@/components/AIProviderIcon";
 
 // Form schema with string handling for allowedSymbols
 const createAgentFormSchema = aiAgentConfigSchema.omit({ allowedSymbols: true, apiKey: true }).extend({
@@ -58,7 +59,7 @@ interface AvailableModel {
   provider: string;
   models: string[];
   defaultModel: string;
-  icon: string;
+  brandColor: string;
 }
 
 export default function AgentsPage() {
@@ -295,7 +296,7 @@ export default function AgentsPage() {
                               {availableModels.map((model) => (
                                 <SelectItem key={model.provider} value={model.provider}>
                                   <span className="flex items-center gap-2">
-                                    <span>{model.icon}</span>
+                                    <AIProviderIcon provider={model.provider} size={20} />
                                     {model.provider}
                                   </span>
                                 </SelectItem>
@@ -683,11 +684,15 @@ export default function AgentsPage() {
               <Card key={agent.id} className="hover-elevate">
                 <CardHeader>
                   <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2">
-                      <Bot className="w-5 h-5" />
+                    <div className="flex items-center gap-3">
+                      <AIProviderAvatar provider={agent.modelProvider} size={40} />
                       <div>
-                        <CardTitle className="text-lg">{agent.modelName}</CardTitle>
-                        <CardDescription>{agent.modelProvider}</CardDescription>
+                        <CardTitle className="text-lg">{agent.name || agent.modelName}</CardTitle>
+                        <CardDescription className="flex items-center gap-1">
+                          <span>{agent.modelProvider}</span>
+                          <span className="text-muted-foreground/50">•</span>
+                          <span className="text-xs">{agent.modelName}</span>
+                        </CardDescription>
                       </div>
                     </div>
                     <Badge
