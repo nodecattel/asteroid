@@ -47,6 +47,9 @@ The frontend uses React and TypeScript with Vite, featuring a custom terminal-in
 - **AI Agent Trading Platform** (Enhanced Oct 22, 2025): 
   - Full-featured `/agents` page with intuitive agent management UI
   - **Simplified Configuration**: Focus on investment goals (starting capital, max position size, profit goal, max loss) rather than technical trading parameters
+  - **Dual Target System**: Both USDT-based (targetProfitUsdt, maxLossUsdt) and percentage-based (targetProfitPercent, maxLossPercent) profit/loss targets - whichever is reached first triggers automatic position closure
+  - **Agent Monitoring System**: Background `AgentMonitor` checks running agents every 30 seconds, compares current balance against starting capital, and automatically closes all positions when targets are met
+  - **Automatic Position Closure**: When profit or loss targets are reached, AgentMonitor closes all open positions via market orders and stops the agent
   - **Smart Model Detection**: Automatically detects available AI providers based on configured API keys in environment variables
   - **Dynamic Model Selection**: Provider selection auto-populates with available models, sorted and filtered based on API key availability
   - **Multi-select Market Selector**: Checkbox interface for choosing trading pairs with volume and 24h change info
@@ -57,7 +60,7 @@ The frontend uses React and TypeScript with Vite, featuring a custom terminal-in
   - Independent capital allocation per agent with clear risk parameters
   - Real-time performance tracking (balance, P&L, win rate, Sharpe ratio)
   - Agent trade history feed with reasoning/commentary
-  - Multi-model support (Claude, GPT-4, DeepSeek, Grok, Qwen)
+  - Multi-model support (Claude, GPT-4, DeepSeep, Grok, Qwen)
   - Navigation integration via StatusBar (AI Agents / Bots toggle)
   - Complete CRUD API routes for agent lifecycle including `/api/agents/available-models`
   - WebSocket integration for real-time updates
