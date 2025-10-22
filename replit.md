@@ -44,10 +44,12 @@ The frontend uses React and TypeScript with Vite, featuring a custom terminal-in
 - **Auto-Scroll Pause**: Activity Feed includes a Pause/Resume toggle for reviewing logs.
 - **Enhanced Recent Orders**: Real-time WebSocket updates, auto-scroll with pause/resume, and increased limit to 20 orders.
 - **MCP Server Integration**: Integrates Model Context Protocol server for autonomous AI agent trading, exposing trading tools, real-time resources, and AI decision prompts.
-- **AI Agent Trading Platform** (Completed Oct 22, 2025): 
-  - Full-featured `/agents` page with agent management UI
-  - Create, start, pause, and delete AI trading agents
-  - Independent capital allocation and risk parameters per agent
+- **AI Agent Trading Platform** (Simplified Oct 22, 2025): 
+  - Full-featured `/agents` page with intuitive agent management UI
+  - **Simplified Configuration**: Focus on investment goals (starting capital, max position size, profit goal, max loss) rather than technical trading parameters
+  - **Market Selector**: Multi-select checkbox interface for choosing trading pairs (similar to bot creation)
+  - Create, start, pause, and delete AI trading agents with minimal complexity
+  - Independent capital allocation per agent with clear risk parameters
   - Real-time performance tracking (balance, P&L, win rate, Sharpe ratio)
   - Agent trade history feed with reasoning/commentary
   - Multi-model support (Claude, GPT-4, DeepSeek, Grok, Qwen)
@@ -55,6 +57,7 @@ The frontend uses React and TypeScript with Vite, featuring a custom terminal-in
   - Complete CRUD API routes for agent lifecycle
   - WebSocket integration for real-time updates
   - MCP protocol ready for autonomous AI trading
+  - **Removed Technical Parameters**: Eliminated leverage, stop-loss %, take-profit %, decision interval, max drawdown, max open positions from user configuration (handled automatically by AI)
 
 ### System Design Choices
 - **Investment Model**: Margin-based risk model (`marginUsdt`) where capital is distributed across orders for maximum utilization.
