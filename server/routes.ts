@@ -7,6 +7,7 @@ import { botConfigSchema } from "@shared/schema";
 import { AsterdexClient } from "./asterdex-client";
 import { ExchangeInfoCache } from "./exchange-info-cache";
 import { UserDataStreamManager } from "./user-data-stream";
+import { AgentMonitor } from "./agent-monitor";
 import { setupAuth, requireAuth } from "./auth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -91,6 +92,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Start global user data stream
   initGlobalUserDataStream();
+
+  // Initialize and start Agent Monitor for percentage targets
+  const agentMonitor = new AgentMonitor(storage, new AsterdexClient(
+    process.env.ASTERDEX_API_KEY || '',
+    process.env.ASTERDEX_API_SECRET || ''
+  ));
+  agentMonitor.start();
+  
+  // Listen for agent auto-stop events
+  agentMonitor.on('agentStopped', (data) => {
+    io.emit('agentUpdated', data);
+    console.log(`[AgentMonitor] Agent ${data.agentId} stopped: ${data.reason}`);
+  });
 
   // Forward bot events to connected clients
   botManager.on('orderPlaced', (data) => {
