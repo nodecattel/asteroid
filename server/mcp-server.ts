@@ -337,7 +337,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   try {
     switch (name) {
       case 'get_account_balance': {
-        const balance = await apiClient.getAccountBalance();
+        const balance = await apiClient.getBalance();
         return {
           content: [
             {
@@ -409,10 +409,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
         
         // Set leverage first
-        await apiClient.setLeverage(symbol, leverage);
+        await apiClient.changeLeverage(symbol, leverage);
         
         // Place market order
-        const order = await apiClient.newOrder({
+        const order = await apiClient.placeOrder({
           symbol,
           side,
           type: 'MARKET' as OrderType,
@@ -439,10 +439,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
         
         // Set leverage first
-        await apiClient.setLeverage(symbol, leverage);
+        await apiClient.changeLeverage(symbol, leverage);
         
         // Place limit order
-        const order = await apiClient.newOrder({
+        const order = await apiClient.placeOrder({
           symbol,
           side,
           type: 'LIMIT' as OrderType,
@@ -463,7 +463,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'cancel_order': {
         const { symbol, orderId } = args as { symbol: string; orderId: number };
-        const result = await apiClient.cancelOrder(symbol, orderId);
+        const result = await apiClient.cancelOrder(symbol, orderId.toString());
         return {
           content: [
             {
@@ -476,7 +476,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'cancel_all_orders': {
         const { symbol } = args as { symbol: string };
-        const result = await apiClient.cancelAllOpenOrders(symbol);
+        const result = await apiClient.cancelAllOrders(symbol);
         return {
           content: [
             {
@@ -506,7 +506,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const positionSize = Math.abs(parseFloat(position.positionAmt));
         const side: OrderSide = parseFloat(position.positionAmt) > 0 ? 'SELL' : 'BUY';
         
-        const order = await apiClient.newOrder({
+        const order = await apiClient.placeOrder({
           symbol,
           side,
           type: 'MARKET' as OrderType,
@@ -526,7 +526,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
       case 'set_leverage': {
         const { symbol, leverage } = args as { symbol: string; leverage: number };
-        const result = await apiClient.setLeverage(symbol, leverage);
+        const result = await apiClient.changeLeverage(symbol, leverage);
         return {
           content: [
             {
@@ -545,7 +545,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           quantity: number;
         };
         
-        const order = await apiClient.newOrder({
+        const order = await apiClient.placeOrder({
           symbol,
           side,
           type: 'STOP_MARKET' as OrderType,
@@ -572,7 +572,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           quantity: number;
         };
         
-        const order = await apiClient.newOrder({
+        const order = await apiClient.placeOrder({
           symbol,
           side,
           type: 'TAKE_PROFIT_MARKET' as OrderType,
@@ -670,7 +670,7 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
 
   try {
     if (uri === 'market://account/balance') {
-      const balance = await apiClient.getAccountBalance();
+      const balance = await apiClient.getBalance();
       return {
         contents: [
           {
@@ -825,7 +825,7 @@ Based on this data:
 
     case 'risk_assessment': {
       const [balance, positions] = await Promise.all([
-        apiClient.getAccountBalance(),
+        apiClient.getBalance(),
         apiClient.getPositionRisk(),
       ]);
 
@@ -1005,7 +1005,7 @@ async function main() {
   // Test connection
   try {
     await apiClient.ping();
-    const balance = await apiClient.getAccountBalance();
+    const balance = await apiClient.getBalance();
     console.error(`✅ Connected! Balance: ${balance.totalWalletBalance} USDT`);
   } catch (error: any) {
     console.error(`❌ Connection failed: ${error.message}`);

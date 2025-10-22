@@ -39,7 +39,7 @@ app.use(express.json());
 app.get('/health', async (req, res) => {
   try {
     await apiClient.ping();
-    const balance = await apiClient.getAccountBalance();
+    const balance = await apiClient.getBalance();
     res.json({
       status: 'healthy',
       connected: true,
@@ -132,7 +132,7 @@ async function handleCallTool(params: any) {
 
   switch (name) {
     case 'get_account_balance':
-      return { content: [{ type: 'text', text: JSON.stringify(await apiClient.getAccountBalance(), null, 2) }] };
+      return { content: [{ type: 'text', text: JSON.stringify(await apiClient.getBalance(), null, 2) }] };
     
     case 'get_market_price': {
       const price = await apiClient.getMarkPrice(args.symbol);
@@ -149,22 +149,22 @@ async function handleCallTool(params: any) {
       return { content: [{ type: 'text', text: JSON.stringify(await apiClient.getOpenOrders(args.symbol), null, 2) }] };
     
     case 'place_market_order': {
-      await apiClient.setLeverage(args.symbol, args.leverage);
-      const order = await apiClient.newOrder({ symbol: args.symbol, side: args.side, type: 'MARKET' as OrderType, quantity: args.quantity });
+      await apiClient.changeLeverage(args.symbol, args.leverage);
+      const order = await apiClient.placeOrder({ symbol: args.symbol, side: args.side, type: 'MARKET' as OrderType, quantity: args.quantity });
       return { content: [{ type: 'text', text: JSON.stringify({ success: true, order }, null, 2) }] };
     }
     
     case 'place_limit_order': {
-      await apiClient.setLeverage(args.symbol, args.leverage);
-      const order = await apiClient.newOrder({ symbol: args.symbol, side: args.side, type: 'LIMIT' as OrderType, price: args.price, quantity: args.quantity, timeInForce: 'GTC' as TimeInForce });
+      await apiClient.changeLeverage(args.symbol, args.leverage);
+      const order = await apiClient.placeOrder({ symbol: args.symbol, side: args.side, type: 'LIMIT' as OrderType, price: args.price, quantity: args.quantity, timeInForce: 'GTC' as TimeInForce });
       return { content: [{ type: 'text', text: JSON.stringify({ success: true, order }, null, 2) }] };
     }
     
     case 'cancel_order':
-      return { content: [{ type: 'text', text: JSON.stringify({ success: true, result: await apiClient.cancelOrder(args.symbol, args.orderId) }, null, 2) }] };
+      return { content: [{ type: 'text', text: JSON.stringify({ success: true, result: await apiClient.cancelOrder(args.symbol, args.orderId.toString()) }, null, 2) }] };
     
     case 'cancel_all_orders':
-      return { content: [{ type: 'text', text: JSON.stringify({ success: true, result: await apiClient.cancelAllOpenOrders(args.symbol) }, null, 2) }] };
+      return { content: [{ type: 'text', text: JSON.stringify({ success: true, result: await apiClient.cancelAllOrders(args.symbol) }, null, 2) }] };
     
     case 'close_position': {
       const positions = await apiClient.getPositionRisk(args.symbol);
@@ -173,20 +173,20 @@ async function handleCallTool(params: any) {
         return { content: [{ type: 'text', text: JSON.stringify({ error: 'No open position' }) }] };
       }
       const side: OrderSide = parseFloat(position.positionAmt) > 0 ? 'SELL' : 'BUY';
-      const order = await apiClient.newOrder({ symbol: args.symbol, side, type: 'MARKET' as OrderType, quantity: Math.abs(parseFloat(position.positionAmt)), reduceOnly: true });
+      const order = await apiClient.placeOrder({ symbol: args.symbol, side, type: 'MARKET' as OrderType, quantity: Math.abs(parseFloat(position.positionAmt)), reduceOnly: true });
       return { content: [{ type: 'text', text: JSON.stringify({ success: true, closedPosition: position, order }, null, 2) }] };
     }
     
     case 'set_leverage':
-      return { content: [{ type: 'text', text: JSON.stringify({ success: true, result: await apiClient.setLeverage(args.symbol, args.leverage) }, null, 2) }] };
+      return { content: [{ type: 'text', text: JSON.stringify({ success: true, result: await apiClient.changeLeverage(args.symbol, args.leverage) }, null, 2) }] };
     
     case 'place_stop_loss': {
-      const order = await apiClient.newOrder({ symbol: args.symbol, side: args.side, type: 'STOP_MARKET' as OrderType, stopPrice: args.stopPrice, quantity: args.quantity, reduceOnly: true });
+      const order = await apiClient.placeOrder({ symbol: args.symbol, side: args.side, type: 'STOP_MARKET' as OrderType, stopPrice: args.stopPrice, quantity: args.quantity, reduceOnly: true });
       return { content: [{ type: 'text', text: JSON.stringify({ success: true, stopLoss: order }, null, 2) }] };
     }
     
     case 'place_take_profit': {
-      const order = await apiClient.newOrder({ symbol: args.symbol, side: args.side, type: 'TAKE_PROFIT_MARKET' as OrderType, stopPrice: args.stopPrice, quantity: args.quantity, reduceOnly: true });
+      const order = await apiClient.placeOrder({ symbol: args.symbol, side: args.side, type: 'TAKE_PROFIT_MARKET' as OrderType, stopPrice: args.stopPrice, quantity: args.quantity, reduceOnly: true });
       return { content: [{ type: 'text', text: JSON.stringify({ success: true, takeProfit: order }, null, 2) }] };
     }
     
@@ -215,7 +215,7 @@ async function handleReadResource(params: any) {
   const { uri } = params;
   
   let data: any;
-  if (uri === 'market://account/balance') data = await apiClient.getAccountBalance();
+  if (uri === 'market://account/balance') data = await apiClient.getBalance();
   else if (uri === 'market://positions/all') data = await apiClient.getPositionRisk();
   else if (uri === 'market://orders/all') data = await apiClient.getOpenOrders();
   else throw new Error(`Unknown resource: ${uri}`);
@@ -249,7 +249,7 @@ async function handleGetPrompt(params: any) {
     ]);
     promptText = `Analyze ${args.symbol}: Price ${ticker.lastPrice}, 24h Change ${ticker.priceChangePercent}%, Funding ${fundingRate.fundingRate}`;
   } else if (name === 'risk_assessment') {
-    const [balance, positions] = await Promise.all([apiClient.getAccountBalance(), apiClient.getPositionRisk()]);
+    const [balance, positions] = await Promise.all([apiClient.getBalance(), apiClient.getPositionRisk()]);
     promptText = `Assess risk: Balance ${balance.totalWalletBalance} USDT, ${positions.length} positions`;
   }
   
@@ -263,7 +263,7 @@ async function main() {
   
   try {
     await apiClient.ping();
-    const balance = await apiClient.getAccountBalance();
+    const balance = await apiClient.getBalance();
     console.log(`✅ Connected! Balance: ${balance.totalWalletBalance} USDT`);
   } catch (error: any) {
     console.error(`❌ Connection failed: ${error.message}`);
