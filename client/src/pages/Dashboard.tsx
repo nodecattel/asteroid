@@ -13,8 +13,10 @@ import AccountInfo from "@/components/AccountInfo";
 import MarketPairs from "@/components/MarketPairs";
 import Footer from "@/components/Footer";
 import TradesHistory, { Trade } from "@/components/TradesHistory";
+import OverviewCards from "@/components/OverviewCards";
+import BalanceChart from "@/components/BalanceChart";
 import { DollarSign, Activity, TrendingUp, Clock, Zap, Target } from "lucide-react";
-import type { BotInstance, BotStats } from "@shared/schema";
+import type { BotInstance, BotStats, BalanceHistory } from "@shared/schema";
 
 export default function Dashboard() {
   const [selectedBotId, setSelectedBotId] = useState<string | null>(null);
@@ -51,6 +53,18 @@ export default function Dashboard() {
     refetchInterval: 3000,
   });
 
+  // Fetch overview data (bots + agents combined)
+  const { data: overviewData } = useQuery({
+    queryKey: ['/api/overview'],
+    refetchInterval: 5000,
+  });
+
+  // Fetch balance history
+  const { data: balanceHistoryData } = useQuery<{ success: boolean; data: BalanceHistory[] }>({
+    queryKey: ['/api/balance-history'],
+    refetchInterval: 10000,
+  });
+
   // Setup WebSocket listeners
   useEffect(() => {
     const socket = getSocket();
@@ -81,11 +95,17 @@ export default function Dashboard() {
       }
     });
 
+    socket.on('balanceUpdate', (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/balance-history'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/overview'] });
+    });
+
     return () => {
       socket.off('statsUpdated');
       socket.off('activityLog');
       socket.off('orderPlaced');
       socket.off('orderUpdated');
+      socket.off('balanceUpdate');
     };
   }, [selectedBotId]);
 
@@ -219,6 +239,16 @@ export default function Dashboard() {
       />
       
       <div className="flex-1 max-w-[1600px] mx-auto w-full px-4 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
+        {/* Unified Overview - Bots + Agents */}
+        {overviewData?.data && (
+          <OverviewCards overview={overviewData.data} />
+        )}
+
+        {/* Balance History Chart */}
+        {balanceHistoryData?.data && balanceHistoryData.data.length > 0 && (
+          <BalanceChart history={balanceHistoryData.data} />
+        )}
+
         {/* Account Information */}
         <AccountInfo />
 
