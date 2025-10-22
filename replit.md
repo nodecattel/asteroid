@@ -1,9 +1,7 @@
 # Astroid
 
 ## Overview
-Astroid is a trading bot for Aster Dex cryptocurrency exchange, designed to automate trading volume generation. It supports multiple bot instances, each managing a specific market pair, and features a real-time, terminal-inspired dashboard for monitoring and configuration. The project includes password-based authentication, centralized API credential management, and comprehensive security measures. It aims to be a robust, efficient, and user-friendly platform for automated volume generation, with dynamic market loading and Docker-based deployment.
-
-**Branding**: Features custom Astroid logo (white asteroid with rings) prominently displayed on login page, dashboard header, and as favicon. Logo file: `attached_assets/asteroid_1761014274709.png`.
+Astroid is a trading bot designed for the Aster Dex cryptocurrency exchange, automating trading volume generation. It supports multiple bot instances, each managing a specific market pair, and features a real-time, terminal-inspired dashboard for monitoring and configuration. Key capabilities include password-based authentication, centralized API credential management, dynamic market loading, and Docker-based deployment, aiming to provide a robust, efficient, and user-friendly platform for automated volume generation.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
@@ -11,83 +9,67 @@ Preferred communication style: Simple, everyday language.
 ## System Architecture
 
 ### UI/UX Decisions
-The frontend uses React and TypeScript with Vite, featuring a custom terminal-inspired monochrome design. It leverages `shadcn/ui` components based on Radix UI primitives, styled with Tailwind CSS, emphasizing dark mode and strategic accent colors (green for positive, red for negative). Key components include `StatusBar`, `MetricCard`, `OrdersTable`, `ActivityFeed`, `VolumeChart`, `BotSelector`, `ConfigPanel`, and `MarketPairs`. The interface is designed to be mobile-responsive.
-
-**Logo Integration**: Astroid logo appears on login page (large, centered above title), dashboard StatusBar (small, left side), and as favicon. Logo is a white asteroid/planet with rings on transparent background, perfectly matching the dark monochrome theme.
-
-**Market Pairs Display**: Modern tabbed interface showing all 250+ Aster Dex trading pairs with "Favorites" and "All markets" tabs, search functionality, and multi-field sorting. Desktop layout displays 4 columns: Symbols/Volume (with crypto icon, star for favorites, symbol, leverage badge, and volume), Last price, 24h change (color-coded), and Funding Rate. Mobile layout uses 2 columns: Symbols/Volume on left, Price/24h change stacked on right. Favorites stored in localStorage and can be filtered via dedicated tab. Market data cached for 1 minute on backend and frontend. Updates every 60 seconds. Design inspired by Aster Dex's native interface for consistency.
+The frontend uses React and TypeScript with Vite, featuring a custom terminal-inspired monochrome design built with `shadcn/ui` components (Radix UI primitives) and Tailwind CSS. It emphasizes dark mode with strategic accent colors and is mobile-responsive. The Astroid logo is integrated into the login page, dashboard header, and as a favicon. A modern tabbed interface displays Aster Dex trading pairs with "Favorites" and "All markets" views, search, and multi-field sorting, designed for consistency with Aster Dex's native interface.
 
 ### Technical Implementations
-**Frontend**:
-- **Framework**: React with TypeScript, Vite.
-- **State Management**: TanStack Query for server state/API caching.
-- **Authentication**: Protected routes using `useAuth` hook that queries `/api/auth/status`. Login component invalidates auth query cache after successful login to trigger re-authentication check.
-- **Real-time**: WebSocket integration via Socket.IO.
-- **Routing**: Wouter with authentication guard in App.tsx.
-- **Dynamic Market Selection**: Markets are auto-fetched from Aster Dex, cached, and display enriched information including 24h volume, price, price change %, and leverage limits. Markets are sorted by 24h volume.
+**Frontend**: Built with React, TypeScript, and Vite, using TanStack Query for state management and API caching. It includes protected routes with an authentication hook, Socket.IO for real-time updates, and Wouter for routing. Dynamic market selection automatically fetches and caches market data from Aster Dex.
 
-**Backend**:
-- **Runtime**: Node.js with Express.js.
-- **API Design**: RESTful for bot management, complemented by Socket.IO for real-time communication.
-- **Authentication**: Password-based authentication using `BOT_PASSWORD` environment variable (required). Session management via `express-session` with memory store. HttpOnly cookies for security. Three endpoints: `/api/auth/login`, `/api/auth/logout`, `/api/auth/status`.
-- **API Credentials**: Centralized `ASTERDEX_API_KEY` and `ASTERDEX_API_SECRET` stored in environment variables (not database). All bots share these credentials for security.
-- **Core Bot Engine**: Manages individual bot instances, handles trading logic, market data intelligence, batch order placement, real-time order tracking, risk monitoring, and performance analytics.
-- **Bot Manager**: A singleton orchestrator for multiple bot instances, coordinating lifecycle and broadcasting WebSocket events.
-- **Aster Dex API Client**: Provides complete API coverage with HMAC SHA256 authentication, rate limit protection, and automatic backoff.
-- **User Data Stream Manager**: Manages WebSocket connections to Aster Dex for real-time updates, including automatic reconnection and listen key keepalive.
-- **Exchange Info Cache**: Caches Aster Dex exchange information, 24hr ticker data, leverage brackets, and funding rates. Cache duration: 1 minute for fresh market data.
+**Backend**: Developed with Node.js and Express.js, providing a RESTful API for bot management and Socket.IO for real-time communication. Authentication is password-based using an environment variable (`BOT_PASSWORD`) and `express-session` with HttpOnly cookies. API credentials (`ASTERDEX_API_KEY`, `ASTERDEX_API_SECRET`) are stored securely in environment variables. The core bot engine manages individual bot instances, trading logic, market data, order placement, and risk monitoring. A singleton Bot Manager orchestrates instances and broadcasts WebSocket events. An Aster Dex API Client provides comprehensive API coverage with HMAC SHA256 authentication, rate limit protection, and automatic backoff. A User Data Stream Manager handles real-time updates from Aster Dex, and an Exchange Info Cache stores market data for freshness.
 
 ### Feature Specifications
-- **Market Pairs Overview**: Modern tabbed interface (Favorites/All markets) displaying all 250+ trading pairs. Features search, multi-field sorting (symbol, price, 24h change, funding rate), and crypto icons for each asset. Desktop: 5-column layout (Symbols/Volume, Last price, 24h change, Funding Rate, Actions). Mobile: Responsive 3-column layout (Symbols/Volume left, Price/24h change stacked middle, Actions right). Favorites persisted in localStorage with dedicated tab filter. Market data cached 1 minute for freshness. Auto-refreshes every 60 seconds. Layout matches Aster Dex's native design for professional consistency.
-- **Quick Bot Creation**: Each market row includes a "+" action button (desktop: "Bot" button with icon, mobile: icon-only) that triggers a confirmation dialog showing market details (Last Price, 24h Change, Max Leverage). Clicking "Continue" opens the Create New Bot dialog with the market symbol pre-populated, streamlining the bot creation workflow. Components communicate via Dashboard state management using `initialSymbol` prop.
-- **Dual Spread System**: Implements two separate spread controls for precise order placement. First Order Spread (firstOrderSpreadBps, default 5 bps) controls distance from current price to first buy/sell order. Order Spacing (orderSpacingBps, default 2 bps) controls spacing between subsequent orders to avoid large exponential spreads. Bot engine calculates order prices as: buy orders = referencePrice - firstOrderSpread - (i * orderSpacing), sell orders = referencePrice + firstOrderSpread + (i * orderSpacing).
-- **Mobile-Responsive Bot Dialog**: Create/Edit Bot dialogs fully optimized for mobile screens. Dialog uses 98vw max width on mobile with responsive padding (4 on mobile, 6 on desktop). Form grids changed from 3-column to 2-column layout for better mobile display. All content fits within viewport without horizontal scrolling.
-- **Dynamic Market System**: Auto-discovers and caches markets from Aster Dex, providing rich data and sorting by volume.
-- **Secure Credential Management**: API credentials are stored in environment variables and are never exposed in the UI or per-bot configuration.
-- **100% Aster Dex API Utilization**: Full coverage of 60+ API methods for advanced orders, risk management, market intelligence, and account analytics.
-- **Intelligent Trading**: Mark price-based order placement, batch order processing, real-time order fill tracking, commission-aware P&L, and automatic risk monitoring.
-- **Multi-Bot Management**: Supports running and monitoring multiple independent bot instances on different market pairs.
-- **Rate Limit Protection**: Implements request weight tracking, order count limits, automatic backoff, and request queuing.
-- **Password Authentication**: Implemented for all bot management and account endpoints.
-- **Dynamic Max Leverage**: Fetches and displays real-time max leverage from Aster Dex API for each market. Automatically sets leverage on the exchange when bot starts or when leverage is updated.
+- **Market Pairs Overview**: Tabbed interface with Favorites/All markets, search, multi-field sorting, and crypto icons.
+- **Quick Bot Creation**: "+" action button on market rows to quickly initiate bot creation for that market.
+- **Dual Spread System**: Separate controls for `firstOrderSpreadBps` and `orderSpacingBps` for precise order placement.
+- **Mobile-Responsive Bot Dialog**: Optimized Create/Edit Bot dialogs for mobile screens.
+- **Dynamic Market System**: Auto-discovers, caches, and sorts markets from Aster Dex.
+- **Secure Credential Management**: API keys are environment variables, never exposed.
+- **100% Aster Dex API Utilization**: Full coverage of over 60 API methods.
+- **Intelligent Trading**: Mark price-based orders, batch processing, real-time fill tracking, commission-aware P&L, and risk monitoring.
+- **Multi-Bot Management**: Supports multiple independent bot instances across different market pairs.
+- **Rate Limit Protection**: Implements request weight tracking, order count limits, and automatic backoff.
+- **Password Authentication**: Secures bot management endpoints.
+- **Dynamic Max Leverage**: Fetches and applies real-time max leverage per market.
 - **Budget Warning System**: Validates order sizes against total budget.
-- **Auto-Start Feature**: Bots automatically start trading after creation.
-- **Bot Parameter Editing**: Running bots can be edited without stopping them.
-- **Auto-Close Positions on Stop**: Open positions are automatically closed when a bot is stopped.
-- **Trading Bias System**: Bots fully respect `tradingBias` ('neutral', 'long', 'short') and `longBiasPercent` settings. Long bias places more buy orders, short bias places more sell orders, and neutral uses 50/50 or custom percentage distribution. Bot logs show active bias configuration on each trading loop.
-- **Smart Order Management**: Bot uses intelligent order management to avoid excessive cancellations. Orders are only cancelled and replaced when price moves more than 0.3% (or spread threshold, whichever is larger). Otherwise, existing orders remain active to maximize fill opportunities. If orders get filled or cancelled externally, the bot automatically detects missing orders and replaces them with a full set positioned around the current mark price. Logs show when orders are kept vs cancelled based on price stability and order count.
-- **TP/SL Protection Orders**: Fixed TP/SL order placement to use `reduceOnly: true` with explicit quantity instead of `closePosition: true`. Enhanced error logging shows full API response for debugging. Protection orders now properly placed on AsterDex exchange.
-- **Robust Precision Handling**: Price and quantity precision calculated directly from exchange's tickSize and stepSize filters instead of relying on pricePrecision/quantityPrecision fields. Applied to ALL order types including regular orders, stop-loss, and take-profit orders. Prevents "Precision is over the maximum defined for this asset" error (code -1111) across all trading pairs including ASTERUSDT.
-- **Configurable Cycle Time**: Added `cycleTimeSeconds` setting (default 5s, range 1-300s) allowing users to balance volume generation versus trade quality. Short cycles (1-10s) maximize volume but reduce fill rates; long cycles (30-60s) improve order fills but reduce volume. Replaces hardcoded 5-second loop delay.
-- **Maximum Margin Utilization**: Bot automatically distributes margin budget equally across all orders to maximize capital efficiency and volume generation. Calculation: `marginPerOrder = totalBudget / totalOrders`, then `notionalPerOrder = marginPerOrder × leverage`. This ensures near-100% margin utilization. The deprecated `orderSizePercent` parameter is no longer used. Logs display actual margin utilization percentage for transparency.
-- **TP/SL Update Cooldown**: Protection orders (Stop-Loss and Take-Profit) have a 30-second cooldown between updates to prevent hitting exchange stop order limits (error -4045). This prevents rapid cancel/replace cycles while maintaining risk protection.
-- **Auto-Recalculate TP/SL on Side Change**: When net position changes from LONG to SHORT or vice versa, the bot automatically detects the side change, cancels old protection orders, and schedules new TP/SL recalculation with an 8-second buffer period. This prevents exchange errors while ensuring positions always have correctly positioned protection orders. Bot logs show side change warnings and TP/SL update confirmations.
-- **Auto-Scroll Pause**: Activity Feed includes Pause/Resume toggle allowing users to scroll up and review old logs without auto-scroll interference. Click "Pause" to stop auto-scrolling, "Resume" to re-enable.
+- **Auto-Start Feature**: Bots automatically begin trading upon creation.
+- **Bot Parameter Editing**: Allows editing running bots without stopping.
+- **Auto-Close Positions on Stop**: Automatically closes open positions when a bot is stopped.
+- **Trading Bias System**: Fully respects `tradingBias` ('neutral', 'long', 'short') and `longBiasPercent` settings.
+- **Smart Order Management**: Minimizes cancellations by only replacing orders when price moves significantly or orders are filled/cancelled externally.
+- **TP/SL Protection Orders**: Uses `reduceOnly: true` with explicit quantity for fixed Take-Profit/Stop-Loss orders.
+- **Robust Precision Handling**: Calculates price and quantity precision from exchange's tickSize and stepSize filters.
+- **Configurable Cycle Time**: `cycleTimeSeconds` setting (1-300s) to balance volume generation and trade quality.
+- **Maximum Margin Utilization**: Bot automatically distributes margin budget equally across all orders.
+- **TP/SL Update Cooldown**: 30-second cooldown between TP/SL updates to prevent exchange rate limits.
+- **Auto-Recalculate TP/SL on Side Change**: Detects position side changes, cancels old protection orders, and schedules new TP/SL recalculation.
+- **Auto-Scroll Pause**: Activity Feed includes a Pause/Resume toggle for reviewing logs.
+- **Enhanced Recent Orders**: Real-time WebSocket updates, auto-scroll with pause/resume, and increased limit to 20 orders.
+- **MCP Server Integration**: Integrates Model Context Protocol server for autonomous AI agent trading, exposing trading tools, real-time resources, and AI decision prompts.
 
 ### System Design Choices
-- **Investment Model**: Uses a margin-based risk model (`marginUsdt`) where users specify the capital they want to risk. Margin is automatically distributed equally across all orders to maximize utilization and volume generation. Order sizes are calculated as: `marginPerOrder = marginUsdt / (ordersPerSide × 2)`, then `notionalPerOrder = marginPerOrder × leverage`. System ensures compliance with exchange minimum notional requirements while achieving near-100% margin utilization.
-- **Data Storage**: In-memory for development, with optional PostgreSQL using Drizzle ORM for production. Zod schemas ensure data integrity. API credentials are not stored in the database.
-- **Security**: Password-based access control, API credentials stored exclusively in `.env` files, and Express-session for session management with HttpOnly cookies.
+- **Investment Model**: Margin-based risk model (`marginUsdt`) where capital is distributed across orders for maximum utilization.
+- **Data Storage**: In-memory for development, with optional PostgreSQL using Drizzle ORM for production. Zod schemas ensure data integrity.
+- **Security**: Password-based access, API credentials in `.env`, and `express-session` with HttpOnly cookies.
 - **Port Configuration**: Supports `PORT` environment variable.
-- **Deployment**: Docker-based deployment recommended for production using Docker Compose. Replit deployment is supported for development/testing.
-- **Robustness**: Type safety with TypeScript, comprehensive error handling, and performance optimizations.
+- **Deployment**: Docker-based deployment (Docker Compose) recommended for production; Replit supported for development.
+- **Robustness**: Type safety with TypeScript, error handling, and performance optimizations.
 
 ## External Dependencies
 
 - **Aster Dex Exchange API**:
     - Base URL: `https://fapi.asterdex.com`
     - WebSocket URL: `wss://fstream.asterdex.com`
-    - Authentication: API Key + HMAC SHA256 signed requests.
-    - Endpoints: `/fapi/v1/*`, `/fapi/v2/*`, `/fapi/v4/*` for trading, market data, and exchange info.
+    - Authentication: API Key + HMAC SHA256.
+    - Endpoints: `/fapi/v1/*`, `/fapi/v2/*`, `/fapi/v4/*`.
 - **Real-time Communication**:
-    - Socket.IO: For WebSocket communication between the server and clients.
-    - `ws` library: For native WebSocket connections to Asterdex.
+    - Socket.IO: For server-client WebSocket communication.
+    - `ws`: For native WebSocket connections to Asterdex.
 - **Third-party Services**:
-    - Axios: For HTTP requests to the Asterdex API.
+    - Axios: For HTTP requests to Asterdex API.
     - Neon Database: Optional PostgreSQL serverless database.
+    - MCP SDK (`@modelcontextprotocol/sdk`): For AI agent integration.
 - **Key Libraries/Frameworks**:
-    - **Frontend**: React, React DOM, TanStack Query, Radix UI, Recharts, React Hook Form, Zod.
+    - **Frontend**: React, TanStack Query, Radix UI, Recharts, React Hook Form, Zod.
     - **Backend**: Express, Socket.IO, `ws`.
     - **Database**: Drizzle ORM, `@neondatabase/serverless`.
     - **Build Tools**: Vite, esbuild, TypeScript.
-    - **Deployment**: Docker, Docker Compose.
+    - **Deployment**: Docker.
