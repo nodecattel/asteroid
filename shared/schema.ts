@@ -236,8 +236,14 @@ export const aiAgentConfigSchema = z.object({
   // Investment Parameters (simplified)
   startingCapital: z.number().positive(), // Initial USDT balance
   maxPositionSize: z.number().positive(), // Max USDT per single position
-  targetProfitUsdt: z.number().positive(), // Capital gain goal in USDT
-  maxLossUsdt: z.number().positive(), // Maximum acceptable loss in USDT
+  
+  // Profit/Loss Targets (USDT-based)
+  targetProfitUsdt: z.number().positive().optional(), // Capital gain goal in USDT
+  maxLossUsdt: z.number().positive().optional(), // Maximum acceptable loss in USDT
+  
+  // Profit/Loss Targets (Percentage-based)
+  targetProfitPercent: z.number().positive().optional(), // Target profit as % of starting capital
+  maxLossPercent: z.number().positive().optional(), // Max loss as % of starting capital
   
   // Trading Scope
   allowedSymbols: z.array(z.string()).default(['BTCUSDT', 'ETHUSDT', 'SOLUSDT']), // Markets agent can trade
