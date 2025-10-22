@@ -1,21 +1,13 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Search, Star, ArrowUpDown, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatCryptoPrice } from "@/lib/utils";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import UnifiedBotCreation from "./UnifiedBotCreation";
 
 interface Market {
   symbol: string;
@@ -41,15 +33,17 @@ const FAVORITES_KEY = 'astroid_favorite_markets';
 
 interface MarketPairsProps {
   onCreateBot?: (symbol: string) => void;
+  onCreateAgent?: (symbol: string) => void;
 }
 
-export default function MarketPairs({ onCreateBot }: MarketPairsProps) {
+export default function MarketPairs({ onCreateBot, onCreateAgent }: MarketPairsProps) {
+  const [, setLocation] = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState<SortField>('volume');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<TabFilter>('all');
-  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [creationDialogOpen, setCreationDialogOpen] = useState(false);
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
 
   // Load favorites from localStorage on mount
@@ -95,17 +89,25 @@ export default function MarketPairs({ onCreateBot }: MarketPairsProps) {
     });
   };
 
-  const handleCreateBotClick = (symbol: string, e: React.MouseEvent) => {
+  const handleCreateClick = (symbol: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setSelectedSymbol(symbol);
-    setConfirmDialogOpen(true);
+    setCreationDialogOpen(true);
   };
 
-  const handleConfirmCreateBot = () => {
-    if (selectedSymbol && onCreateBot) {
-      onCreateBot(selectedSymbol);
+  const handleSelectType = (type: 'traditional' | 'agent') => {
+    if (!selectedSymbol) return;
+    
+    if (type === 'traditional') {
+      // Create traditional bot
+      if (onCreateBot) {
+        onCreateBot(selectedSymbol);
+      }
+    } else {
+      // Navigate to agents page with pre-selected market
+      setLocation(`/agents?market=${selectedSymbol}`);
     }
-    setConfirmDialogOpen(false);
+    
     setSelectedSymbol(null);
   };
 
@@ -413,12 +415,12 @@ export default function MarketPairs({ onCreateBot }: MarketPairsProps) {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={(e) => handleCreateBotClick(market.symbol, e)}
+                            onClick={(e) => handleCreateClick(market.symbol, e)}
                             className="h-8 px-3 gap-1.5 hover-elevate"
                             data-testid={`button-create-bot-${market.symbol}`}
                           >
                             <Plus className="w-4 h-4" />
-                            <span className="text-xs">Bot</span>
+                            <span className="text-xs">Create</span>
                           </Button>
                         </div>
                       </div>
@@ -471,7 +473,7 @@ export default function MarketPairs({ onCreateBot }: MarketPairsProps) {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={(e) => handleCreateBotClick(market.symbol, e)}
+                            onClick={(e) => handleCreateClick(market.symbol, e)}
                             className="h-8 w-8 hover-elevate"
                             data-testid={`button-create-bot-mobile-${market.symbol}`}
                           >
@@ -500,51 +502,15 @@ export default function MarketPairs({ onCreateBot }: MarketPairsProps) {
         )}
       </CardContent>
 
-      {/* Confirmation Dialog */}
-      <AlertDialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
-        <AlertDialogContent data-testid="dialog-confirm-create-bot">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Create new bot?</AlertDialogTitle>
-            <AlertDialogDescription asChild>
-              <div>
-                <p className="mb-3">
-                  Create new bot with <strong className="text-foreground">{selectedSymbol}</strong> pair?
-                </p>
-                {selectedSymbol && (() => {
-                  const market = markets.find(m => m.symbol === selectedSymbol);
-                  return market ? (
-                    <div className="p-3 bg-muted rounded-md space-y-1.5">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Last Price:</span>
-                        <span className="font-mono">{formatCryptoPrice(market.lastPrice, market.pricePrecision)}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">24h Change:</span>
-                        <span className={`font-mono ${market.priceChangePercent24h >= 0 ? 'text-primary' : 'text-destructive'}`}>
-                          {market.priceChangePercent24h >= 0 ? '+' : ''}{market.priceChangePercent24h.toFixed(2)}%
-                        </span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Max Leverage:</span>
-                        <span className="font-medium">{market.maxLeverage}x</span>
-                      </div>
-                    </div>
-                  ) : null;
-                })()}
-              </div>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancel-create-bot">Cancel</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleConfirmCreateBot}
-              data-testid="button-confirm-create-bot"
-            >
-              Continue
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Unified Bot/Agent Creation Dialog */}
+      {selectedSymbol && (
+        <UnifiedBotCreation
+          open={creationDialogOpen}
+          onOpenChange={setCreationDialogOpen}
+          marketSymbol={selectedSymbol}
+          onSelectType={handleSelectType}
+        />
+      )}
     </Card>
   );
 }
