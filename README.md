@@ -1,12 +1,13 @@
 # Astroid
 
-A fully functional, feature-complete trading bot for Aster Dex cryptocurrency exchange with real-time monitoring dashboard and **100% API utilization**.
+A fully functional, feature-complete trading platform for Aster Dex cryptocurrency exchange with **traditional volume bots** and **AI-powered autonomous trading agents**. Features real-time monitoring dashboard, mobile-responsive design, and 100% API utilization.
 
 ## Features
 
+### Core Trading Platform
 - ✅ **100% Aster Dex API Coverage** - 60+ endpoints for complete market control
-- 🤖 **Multi-Bot Support** - Run multiple bots simultaneously on different pairs
-- 📊 **Real-Time Dashboard** - Terminal-inspired monochrome design
+- 🤖 **Multi-Bot Support** - Run multiple traditional bots simultaneously on different pairs
+- 📊 **Real-Time Dashboard** - Terminal-inspired monochrome design, mobile-optimized
 - 🔄 **WebSocket Integration** - Instant order and position updates
 - 📈 **Advanced Trading** - Batch orders, stop-loss, take-profit, trailing stops
 - ⚡ **Market Intelligence** - Mark price, funding rates, 24hr ticker, order book
@@ -16,6 +17,18 @@ A fully functional, feature-complete trading bot for Aster Dex cryptocurrency ex
 - 🔐 **Password Authentication** - Dashboard protected with configurable password
 - 🐳 **Docker Support** - Easy deployment with Docker Compose
 - 🪐 **Setup Wizard** - asteroid.sh for streamlined first-time setup
+
+### AI Agent Trading Platform (NEW)
+- 🧠 **Autonomous AI Trading Agents** - Create AI-powered trading agents with multiple model support
+- 🎯 **Dual Target System** - Set both USDT-based and percentage-based profit/loss targets
+- 📊 **Automatic Position Management** - Agents automatically close positions when targets are met
+- 🔍 **Multi-Model Support** - Claude (Anthropic), GPT-4 (OpenAI), DeepSeek, Grok (xAI), Qwen (Alibaba)
+- ⚙️ **Simplified Configuration** - Focus on investment goals, not technical parameters
+- 📈 **Real-Time Performance Tracking** - Balance, P&L, win rate, Sharpe ratio
+- 🔄 **Agent Monitoring System** - Background monitoring checks targets every 30 seconds
+- 🎨 **Intuitive UI** - Multi-select market selector, dynamic model detection
+- 🔑 **Optional API Key Override** - Per-agent API key configuration
+- 🌐 **MCP Protocol Ready** - Model Context Protocol integration for autonomous trading
 
 ## Quick Start with Docker
 
@@ -39,6 +52,7 @@ chmod +x asteroid.sh
 The wizard will:
 - ✓ Check that Docker and Docker Compose are installed
 - ✓ Guide you through configuration (API keys, password, database choice)
+- ✓ Optionally configure AI provider API keys for autonomous trading agents
 - ✓ Generate a secure `.env` file with all required settings
 - ✓ Build and start the Docker containers
 - ✓ Verify that everything is running correctly
@@ -46,6 +60,7 @@ The wizard will:
 **What you'll need:**
 - A strong password for dashboard access
 - Aster Dex API credentials ([Get them here](https://www.asterdex.com/en/api-management))
+- (Optional) AI provider API keys for autonomous agents (Anthropic, OpenAI, DeepSeek, xAI, Qwen)
 - Choice of database: in-memory (no persistence) or PostgreSQL (persistent storage)
 
 ### Method 2: Manual Docker Setup
@@ -85,6 +100,13 @@ Your `.env` file must include:
 | `DATABASE_URL` | No | PostgreSQL connection string | `postgresql://asterdex:pass@postgres:5432/asterdex` |
 | `POSTGRES_PASSWORD` | No* | PostgreSQL password | Auto-generated or custom |
 | `POSTGRES_PORT` | No | PostgreSQL external port | `5432` (default) |
+| **AI Provider API Keys** | **Optional** | **For AI Trading Agents** | |
+| `ANTHROPIC_API_KEY` | No | Claude models API key | From console.anthropic.com |
+| `OPENAI_API_KEY` | No | GPT-4 models API key | From platform.openai.com |
+| `DEEPSEEK_API_KEY` | No | DeepSeek models API key | From platform.deepseek.com |
+| `XAI_API_KEY` | No | Grok models API key | From x.ai |
+| `QWEN_API_KEY` | No | Qwen models API key | From dashscope.aliyun.com |
+| `MCP_PORT` | No | MCP server port | `3001` (default) |
 
 *Required only if using PostgreSQL
 
@@ -141,59 +163,10 @@ This only affects external access to PostgreSQL. Internal communication between 
    - `ASTERDEX_API_KEY` - Get from https://www.asterdex.com/en/api-management
    - `ASTERDEX_API_SECRET` - Get from https://www.asterdex.com/en/api-management
    - `SESSION_SECRET` - Generate with `openssl rand -hex 32`
+   - (Optional) AI provider API keys: `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc.
 3. Click "Run" button
 4. The application will start automatically
 5. Access the dashboard in the browser pane
-
-## Configuration
-
-### Environment Variables
-
-Create a `.env` file with the following:
-
-```env
-# Application Port
-PORT=5000
-
-# Session Secret (generate with: openssl rand -hex 32)
-SESSION_SECRET=your-session-secret-here
-
-# Bot Password Authentication (REQUIRED)
-# This password protects access to the dashboard
-BOT_PASSWORD=your-secure-password-here
-
-# Aster Dex API Credentials (REQUIRED)
-# Get your API keys from: https://www.asterdex.com/en/api-management
-ASTERDEX_API_KEY=your-api-key-here
-ASTERDEX_API_SECRET=your-api-secret-here
-
-# Database (optional - uses in-memory by default)
-DATABASE_URL=postgresql://user:pass@localhost:5432/asterdex
-```
-
-**Important**: 
-- `BOT_PASSWORD` is required to access the dashboard - choose a strong password
-- All bots share the same `ASTERDEX_API_KEY` and `ASTERDEX_API_SECRET` for security
-- API credentials are stored in environment variables, not in the database or UI
-- **Get your Aster Dex API keys from: https://www.asterdex.com/en/api-management**
-  - Each account can create up to 30 API keys
-  - Do not disclose your API Key to anyone to avoid asset losses
-  - Enable permissions for futures trading when creating the API key
-
-### Bot Configuration
-
-Bot-specific settings (trading pairs, leverage, strategies) are configured through the web dashboard when creating each bot. API credentials are centrally managed via environment variables for enhanced security.
-
-**Key Configuration Parameters:**
-- **Market Symbol**: Trading pair (e.g., BTCUSDT, ETHUSDT)
-- **Leverage**: 1x to 300x (depending on market limits)
-- **Margin**: Your capital at risk (USDT)
-- **Target Volume**: Trading volume goal over target timeframe
-- **First Order Spread**: Distance from current price to first buy/sell order (in basis points)
-- **Order Spacing**: Spacing between subsequent orders (in basis points)
-- **Cycle Time**: Trading loop frequency (1-300 seconds, default 5s)
-- **Risk Management**: Stop-loss, take-profit percentages
-- **Trading Bias**: Neutral (50/50), Long (more buy orders), or Short (more sell orders)
 
 ## Usage
 
@@ -205,11 +178,13 @@ Bot-specific settings (trading pairs, leverage, strategies) are configured throu
 
 2. **Login** with the password you set in `BOT_PASSWORD` environment variable
 
-3. You'll be redirected to the dashboard where you can manage your bots
+3. You'll be redirected to the dashboard where you can manage your bots and AI agents
 
-### Create a Bot
+### Traditional Volume Bots
 
-1. Click "New Bot" button
+#### Create a Bot
+
+1. Click "New Bot" button in the Bots tab
 2. Select market pair from the dropdown (auto-populated from Aster Dex exchange)
 3. Configure trading parameters:
    - Leverage (1-300x based on market limits)
@@ -223,7 +198,7 @@ Bot-specific settings (trading pairs, leverage, strategies) are configured throu
 
 Astroid will automatically start trading immediately after creation.
 
-### Monitor Performance
+#### Monitor Performance
 
 The dashboard displays:
 - Real-time trading metrics
@@ -233,12 +208,58 @@ The dashboard displays:
 - Activity feed with all bot events
 - Risk indicators (ADL quantile warnings)
 
+### AI Trading Agents
+
+#### Create an AI Agent
+
+1. Navigate to the "AI Agents" tab
+2. Click "Create Agent" button
+3. Configure agent parameters:
+   - **Name**: Descriptive name for your agent
+   - **AI Model**: Choose from available models (Claude, GPT-4, DeepSeek, Grok, Qwen)
+   - **Markets**: Select one or more trading pairs via checkbox interface
+   - **Starting Capital**: Initial USDT balance for the agent
+   - **Max Position Size**: Maximum USDT per individual position
+   - **Profit Targets**: Set BOTH USDT amount AND percentage goals
+     - Example: `$500 USDT OR 25%` - whichever is reached first
+   - **Loss Limits**: Set BOTH USDT amount AND percentage limits
+     - Example: `-$200 USDT OR -10%` - whichever is reached first
+   - (Optional) **Custom API Key**: Override default AI provider key
+4. Click "Create Agent"
+
+The agent will start trading autonomously using AI decision-making.
+
+#### How AI Agents Work
+
+- **Autonomous Decision Making**: AI analyzes market conditions and makes trading decisions
+- **Dual Target System**: Monitors both USDT and percentage-based profit/loss targets
+- **Automatic Position Closure**: When either target is met, all positions are closed via market orders
+- **Agent Monitoring**: Background system checks every 30 seconds
+- **Real-Time Updates**: Performance metrics update in real-time via WebSocket
+
+#### Monitor AI Agent Performance
+
+The AI Agents dashboard displays:
+- Current balance and P&L (USDT and percentage)
+- Win rate and Sharpe ratio
+- Trade history with AI reasoning/commentary
+- Active positions
+- Progress toward profit/loss targets
+- Balance history charts showing performance over time
+
 ### Available Markets
 
 Markets are automatically fetched from Aster Dex exchange info endpoint and refreshed every 5 minutes. Each market displays:
-- Trading pair symbol
+- Trading pair symbol with crypto icon
 - Maximum leverage available
+- 24-hour price change and volume
 - Price and quantity precision
+
+The market selector includes:
+- **Favorites Tab**: Quick access to frequently traded pairs
+- **All Markets Tab**: Complete list of available markets
+- **Search**: Filter markets by symbol
+- **Multi-field Sorting**: Sort by volume, price change, or symbol
 
 ## Docker Management Commands
 
@@ -316,6 +337,8 @@ docker-compose up -d
 - Complete Aster Dex API client (60+ methods)
 - User data stream manager for WebSocket
 - Exchange info caching system (5-min refresh)
+- AI agent monitoring system (30-second checks)
+- MCP server for autonomous AI trading
 
 ### Frontend
 - React + TypeScript
@@ -323,6 +346,8 @@ docker-compose up -d
 - Shadcn/ui + Radix UI components
 - Terminal-inspired monochrome design
 - Real-time WebSocket updates
+- Mobile-responsive interface
+- Unified dashboard for bots and AI agents
 
 ## API Integration
 
@@ -340,10 +365,41 @@ Astroid utilizes 100% of the Aster Dex API:
 
 **WebSocket**: Real-time order updates, position changes, margin calls
 
+## AI Agent Features
+
+### Dual Target System
+Set both USDT-based and percentage-based profit/loss targets. The agent automatically stops when **either** target is reached:
+- **Profit**: `targetProfitUsdt` OR `targetProfitPercent` (whichever comes first)
+- **Loss**: `maxLossUsdt` OR `maxLossPercent` (whichever comes first)
+
+### Agent Monitoring
+Background `AgentMonitor` service:
+- Checks all running agents every 30 seconds
+- Compares current balance against starting capital
+- Calculates both USDT and percentage P&L
+- Automatically closes all positions when targets are met
+- Stops the agent and broadcasts updates via WebSocket
+
+### Supported AI Models
+- **Anthropic**: Claude 3.5 Sonnet, Claude 3 Opus, Claude 3 Haiku
+- **OpenAI**: GPT-4, GPT-4 Turbo, GPT-3.5 Turbo
+- **DeepSeek**: DeepSeek Chat, DeepSeek Coder
+- **xAI**: Grok
+- **Alibaba**: Qwen models
+
+Model availability depends on configured API keys in your `.env` file.
+
+### Simplified Configuration
+Unlike traditional bots, AI agents require minimal configuration:
+- **Investment Goals**: Starting capital, position size, profit/loss targets
+- **No Technical Parameters**: AI handles leverage, stop-loss, take-profit, decision timing automatically
+- **Focus on Outcomes**: Tell the AI what you want to achieve, not how to trade
+
 ## Security
 
 - **Password Authentication**: Dashboard protected with `BOT_PASSWORD` environment variable
 - **Centralized API Credentials**: All bots use shared `ASTERDEX_API_KEY` and `ASTERDEX_API_SECRET` from environment variables
+- **Per-Agent API Keys**: Optional custom AI provider keys per agent
 - **No Data Leakage**: API credentials never stored in database or exposed in UI
 - **HMAC SHA256**: All Aster Dex API requests are cryptographically signed
 - **Session Management**: Secure HttpOnly cookies prevent XSS attacks
@@ -387,6 +443,18 @@ docker-compose down -v
 docker-compose up -d
 ```
 
+### AI agents not available
+```bash
+# Check if AI provider API keys are configured
+grep "ANTHROPIC_API_KEY\|OPENAI_API_KEY" .env
+
+# Verify API keys are valid by checking logs
+docker-compose logs -f asterdex-bot | grep "available-models"
+
+# Add API keys to .env file and restart
+docker-compose restart
+```
+
 ## Development
 
 ### Running Locally (without Docker)
@@ -409,17 +477,48 @@ npm run build
 npm start
 ```
 
+## Configuration Reference
+
+### Traditional Bot Parameters
+- **Market Symbol**: Trading pair (e.g., BTCUSDT, ETHUSDT)
+- **Leverage**: 1x to 300x (depending on market limits)
+- **Margin**: Your capital at risk (USDT)
+- **Target Volume**: Trading volume goal over target timeframe
+- **First Order Spread**: Distance from current price to first buy/sell order (in basis points)
+- **Order Spacing**: Spacing between subsequent orders (in basis points)
+- **Cycle Time**: Trading loop frequency (1-300 seconds, default 5s)
+- **Risk Management**: Stop-loss, take-profit percentages
+- **Trading Bias**: Neutral (50/50), Long (more buy orders), or Short (more sell orders)
+
+### AI Agent Parameters
+- **Name**: Descriptive identifier
+- **AI Model**: Claude, GPT-4, DeepSeek, Grok, or Qwen
+- **Markets**: One or more trading pairs
+- **Starting Capital**: Initial USDT balance
+- **Max Position Size**: Maximum USDT per position
+- **Target Profit (USDT)**: USDT profit goal
+- **Target Profit (%)**: Percentage profit goal
+- **Max Loss (USDT)**: Maximum acceptable USDT loss
+- **Max Loss (%)**: Maximum acceptable percentage loss
+- **Custom API Key**: (Optional) Override default AI provider key
+
 ## Files Overview
 
 - `asteroid.sh` - Interactive setup wizard for first-time users
 - `docker-compose.yml` - Docker Compose configuration
 - `Dockerfile` - Docker image definition
 - `.dockerignore` - Files to exclude from Docker build
+- `.env.example` - Environment variable template with AI provider keys
 - `server/exchange-info-cache.ts` - Exchange info caching with 5-min refresh
 - `server/asterdex-client.ts` - Complete Aster Dex API client (60+ methods)
 - `server/user-data-stream.ts` - WebSocket user data stream manager
 - `server/bot-engine.ts` - Core trading bot logic
-- `client/src/components/BotSelector.tsx` - Dynamic market selector
+- `server/agent-monitor.ts` - AI agent monitoring with dual target system
+- `client/src/pages/Dashboard.tsx` - Unified dashboard for bots and agents
+- `client/src/pages/agents.tsx` - AI agent management interface
+- `client/src/components/MarketPairs.tsx` - Dynamic market selector with favorites
+- `client/src/components/UnifiedBotCreation.tsx` - Mobile-responsive bot/agent creation dialog
+- `client/src/components/BalanceChart.tsx` - Balance history visualization
 
 ## License
 
@@ -431,7 +530,8 @@ For issues and questions:
 - Check the troubleshooting section
 - Review logs with `docker-compose logs -f`
 - Consult Aster Dex API documentation at https://asterdex.com
+- AI Agent documentation: [Model Context Protocol](https://modelcontextprotocol.io)
 
 ## Credits
 
-**Astroid** - Built with modern web technologies and 100% Aster Dex API integration by NodeCattel.
+**Astroid** - Built with modern web technologies, 100% Aster Dex API integration, and autonomous AI trading capabilities by NodeCattel.

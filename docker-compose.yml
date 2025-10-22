@@ -15,6 +15,14 @@ services:
       - ASTERDEX_API_KEY=${ASTERDEX_API_KEY}
       - ASTERDEX_API_SECRET=${ASTERDEX_API_SECRET}
       - DATABASE_URL=${DATABASE_URL}
+      # AI Provider API Keys (Optional - For AI Trading Agents)
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - XAI_API_KEY=${XAI_API_KEY}
+      - QWEN_API_KEY=${QWEN_API_KEY}
+      # MCP Server Configuration
+      - MCP_PORT=${MCP_PORT:-3001}
     volumes:
       - ./data:/app/data
     networks:
