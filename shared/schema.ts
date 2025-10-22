@@ -348,3 +348,18 @@ export const aiAgentReasoningSchema = z.object({
 });
 
 export type AIAgentReasoning = z.infer<typeof aiAgentReasoningSchema>;
+
+// Balance History Schema - Track account balance changes over time
+export const balanceHistorySchema = z.object({
+  id: z.string(),
+  timestamp: z.string().datetime(),
+  balance: z.number(), // Total account balance at this point
+  change: z.number(), // Change since last snapshot
+  source: z.enum(['bot', 'agent', 'manual']), // What caused the change
+  sourceId: z.string().optional(), // Bot ID or Agent ID
+  sourceName: z.string(), // Bot market symbol or Agent model name
+  sourceIcon: z.string().optional(), // Icon/emoji for visual identification
+  pnl: z.number().default(0), // Realized P&L at this point
+});
+
+export type BalanceHistory = z.infer<typeof balanceHistorySchema>;

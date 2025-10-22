@@ -66,6 +66,8 @@ The frontend uses React and TypeScript with Vite, featuring a custom terminal-in
 
 ### System Design Choices
 - **Investment Model**: Margin-based risk model (`marginUsdt`) where capital is distributed across orders for maximum utilization.
+- **Unified Dashboard**: Displays both traditional volume bots and AI agents with balance history charts showing which agents are active
+- **Balance Tracking**: Real-time balance history with visual indicators (icons/logos) for each bot/agent
 - **Data Storage**: In-memory for development, with optional PostgreSQL using Drizzle ORM for production. Zod schemas ensure data integrity.
 - **Security**: Password-based access, API credentials in `.env`, and `express-session` with HttpOnly cookies.
 - **Port Configuration**: Supports `PORT` environment variable.

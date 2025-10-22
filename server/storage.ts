@@ -11,7 +11,8 @@ import {
   type AIAgentInstance,
   type AIAgentConfig,
   type AIAgentTrade,
-  type AIAgentReasoning
+  type AIAgentReasoning,
+  type BalanceHistory
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -67,6 +68,10 @@ export interface IStorage {
   addAIAgentReasoning(reasoning: Omit<AIAgentReasoning, 'id'>): Promise<AIAgentReasoning>;
   getAIAgentReasoning(agentId: string, limit?: number): Promise<AIAgentReasoning[]>;
   getAllAIAgentReasoning(limit?: number): Promise<AIAgentReasoning[]>; // For global chat feed
+  
+  // Balance History
+  addBalanceSnapshot(snapshot: Omit<BalanceHistory, 'id'>): Promise<BalanceHistory>;
+  getBalanceHistory(limit?: number): Promise<BalanceHistory[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -79,6 +84,7 @@ export class MemStorage implements IStorage {
   private aiAgents: Map<string, AIAgentInstance> = new Map();
   private aiAgentTrades: Map<string, AIAgentTrade[]> = new Map();
   private aiAgentReasoning: Map<string, AIAgentReasoning[]> = new Map();
+  private balanceHistory: BalanceHistory[] = [];
 
   // Bot Instance Methods
   async createBotInstance(config: BotConfig): Promise<BotInstance> {
@@ -448,6 +454,27 @@ export class MemStorage implements IStorage {
       allReasoning.push(...reasoning);
     }
     const sorted = allReasoning.sort((a, b) => 
+      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+    return limit ? sorted.slice(0, limit) : sorted;
+  }
+
+  // Balance History Methods
+  async addBalanceSnapshot(snapshot: Omit<BalanceHistory, 'id'>): Promise<BalanceHistory> {
+    const id = randomUUID();
+    const newSnapshot: BalanceHistory = { id, ...snapshot };
+    this.balanceHistory.push(newSnapshot);
+    
+    // Keep only last 1000 snapshots to prevent memory issues
+    if (this.balanceHistory.length > 1000) {
+      this.balanceHistory = this.balanceHistory.slice(-1000);
+    }
+    
+    return newSnapshot;
+  }
+
+  async getBalanceHistory(limit?: number): Promise<BalanceHistory[]> {
+    const sorted = [...this.balanceHistory].sort((a, b) => 
       new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
     return limit ? sorted.slice(0, limit) : sorted;
