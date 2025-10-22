@@ -785,5 +785,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get balance history (protected)
+  app.get('/api/balance-history', requireAuth, async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
+      const history = await storage.getBalanceHistory(limit);
+      res.json({
+        success: true,
+        data: history
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  // Get unified overview (bots + agents) (protected)
+  app.get('/api/overview', requireAuth, async (req, res) => {
+    try {
+      const bots = await storage.getAllBots();
+      const agents = await storage.getAllAIAgents();
+      
+      // Calculate aggregate stats
+      const totalBots = bots.length;
+      const activeBots = bots.filter(b => b.status === 'running').length;
+      const totalAgents = agents.length;
+      const activeAgents = agents.filter(a => a.status === 'running').length;
+      
+      // Get account balance
+      const apiKey = process.env.ASTERDEX_API_KEY || '';
+      const apiSecret = process.env.ASTERDEX_API_SECRET || '';
+      const client = new AsterdexClient(apiKey, apiSecret);
+      
+      let accountBalance = 0;
+      let availableBalance = 0;
+      try {
+        const accountInfo = await client.getAccountInformation();
+        const usdtBalance = accountInfo.assets?.find((a: any) => a.asset === 'USDT');
+        if (usdtBalance) {
+          accountBalance = parseFloat(usdtBalance.walletBalance || '0');
+          availableBalance = parseFloat(usdtBalance.availableBalance || '0');
+        }
+      } catch (error) {
+        console.error('Failed to fetch account balance:', error);
+      }
+      
+      // Get total P&L from all bots
+      let totalBotPnL = 0;
+      for (const bot of bots) {
+        const stats = await storage.getBotStats(bot.id);
+        if (stats) {
+          totalBotPnL += stats.currentPnL || 0;
+        }
+      }
+      
+      // Get total P&L from all agents
+      const totalAgentPnL = agents.reduce((sum, agent) => sum + (agent.performance.totalPnL || 0), 0);
+      
+      res.json({
+        success: true,
+        data: {
+          bots: {
+            total: totalBots,
+            active: activeBots,
+            totalPnL: totalBotPnL,
+          },
+          agents: {
+            total: totalAgents,
+            active: activeAgents,
+            totalPnL: totalAgentPnL,
+          },
+          account: {
+            balance: accountBalance,
+            availableBalance,
+            totalPnL: totalBotPnL + totalAgentPnL,
+          },
+          activeItems: [
+            ...bots.filter(b => b.status === 'running').map(b => ({
+              id: b.id,
+              type: 'bot' as const,
+              name: b.marketSymbol,
+              icon: '🤖',
+            })),
+            ...agents.filter(a => a.status === 'running').map(a => ({
+              id: a.id,
+              type: 'agent' as const,
+              name: a.modelName,
+              icon: a.modelName.includes('claude') ? '🤖' : 
+                    a.modelName.includes('gpt') ? '🧠' : 
+                    a.modelName.includes('deepseek') ? '🔍' : 
+                    a.modelName.includes('grok') ? '⚡' : 
+                    a.modelName.includes('qwen') ? '🌐' : '🔮',
+            })),
+          ],
+        }
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
   return httpServer;
 }
