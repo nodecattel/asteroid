@@ -44,6 +44,17 @@ The frontend uses React and TypeScript with Vite, featuring a custom terminal-in
 - **Auto-Scroll Pause**: Activity Feed includes a Pause/Resume toggle for reviewing logs.
 - **Enhanced Recent Orders**: Real-time WebSocket updates, auto-scroll with pause/resume, and increased limit to 20 orders.
 - **MCP Server Integration**: Integrates Model Context Protocol server for autonomous AI agent trading, exposing trading tools, real-time resources, and AI decision prompts.
+- **AI Agent Trading Platform** (Completed Oct 22, 2025): 
+  - Full-featured `/agents` page with agent management UI
+  - Create, start, pause, and delete AI trading agents
+  - Independent capital allocation and risk parameters per agent
+  - Real-time performance tracking (balance, P&L, win rate, Sharpe ratio)
+  - Agent trade history feed with reasoning/commentary
+  - Multi-model support (Claude, GPT-4, DeepSeek, Grok, Qwen)
+  - Navigation integration via StatusBar (AI Agents / Bots toggle)
+  - Complete CRUD API routes for agent lifecycle
+  - WebSocket integration for real-time updates
+  - MCP protocol ready for autonomous AI trading
 
 ### System Design Choices
 - **Investment Model**: Margin-based risk model (`marginUsdt`) where capital is distributed across orders for maximum utilization.

@@ -15,6 +15,7 @@ import { aiAgentConfigSchema, type AIAgentInstance, type AIAgentTrade } from "@s
 import { Play, Pause, Trash2, Bot, TrendingUp, TrendingDown, DollarSign, Activity } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
+import StatusBar from "@/components/StatusBar";
 
 const createAgentFormSchema = aiAgentConfigSchema.omit({ allowedSymbols: true }).extend({
   allowedSymbolsString: z.string(),
@@ -139,8 +140,23 @@ export default function AgentsPage() {
     );
   }
 
+  // Calculate aggregate stats
+  const totalAgents = agents.length;
+  const runningAgents = agents.filter((a) => a.status === 'running').length;
+  const totalBalance = agents.reduce((sum, a) => sum + a.currentBalance, 0);
+  const totalPnL = agents.reduce((sum, a) => sum + a.totalPnL, 0);
+
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="min-h-screen bg-background">
+      <StatusBar
+        botStatus={runningAgents > 0 ? "running" : "stopped"}
+        market={`${totalAgents} AI Agents`}
+        sessionTime={`${runningAgents} Active`}
+        connectionStatus="connected"
+        onPauseResume={() => {}}
+        onSettings={() => {}}
+      />
+      <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -559,6 +575,7 @@ export default function AgentsPage() {
           </CardContent>
         </Card>
       )}
+      </div>
     </div>
   );
 }
