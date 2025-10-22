@@ -556,6 +556,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ===== AI AGENT ROUTES =====
 
+  // Get available AI models based on configured API keys (protected)
+  app.get('/api/agents/available-models', requireAuth, async (req, res) => {
+    try {
+      const availableModels = [];
+      
+      // Check which API keys are configured
+      if (process.env.ANTHROPIC_API_KEY) {
+        availableModels.push({
+          provider: 'Anthropic',
+          models: ['Claude 3.5 Sonnet', 'Claude 3 Opus', 'Claude 3 Sonnet', 'Claude 3 Haiku'],
+          defaultModel: 'Claude 3.5 Sonnet',
+          icon: '🤖',
+        });
+      }
+      
+      if (process.env.OPENAI_API_KEY) {
+        availableModels.push({
+          provider: 'OpenAI',
+          models: ['GPT-4', 'GPT-4 Turbo', 'GPT-4o', 'GPT-3.5 Turbo'],
+          defaultModel: 'GPT-4',
+          icon: '🧠',
+        });
+      }
+      
+      if (process.env.DEEPSEEK_API_KEY) {
+        availableModels.push({
+          provider: 'DeepSeek',
+          models: ['DeepSeek Chat V3.1', 'DeepSeek Coder V2'],
+          defaultModel: 'DeepSeek Chat V3.1',
+          icon: '🔍',
+        });
+      }
+      
+      if (process.env.XAI_API_KEY) {
+        availableModels.push({
+          provider: 'xAI',
+          models: ['Grok 2', 'Grok 1.5'],
+          defaultModel: 'Grok 2',
+          icon: '⚡',
+        });
+      }
+      
+      if (process.env.QWEN_API_KEY) {
+        availableModels.push({
+          provider: 'Alibaba',
+          models: ['Qwen Max', 'Qwen Plus', 'Qwen Turbo'],
+          defaultModel: 'Qwen Max',
+          icon: '🌐',
+        });
+      }
+      
+      res.json({
+        success: true,
+        data: availableModels,
+        hasAnyKeys: availableModels.length > 0,
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
   // Get all AI agents (protected)
   app.get('/api/agents', requireAuth, async (req, res) => {
     try {

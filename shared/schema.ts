@@ -242,6 +242,9 @@ export const aiAgentConfigSchema = z.object({
   // Trading Scope
   allowedSymbols: z.array(z.string()).default(['BTCUSDT', 'ETHUSDT', 'SOLUSDT']), // Markets agent can trade
   
+  // Optional API Key Override (if not using environment variable)
+  apiKey: z.string().optional(), // Per-agent API key override
+  
   // MCP Connection (internal config)
   mcpEndpoint: z.string().url().optional(), // HTTP MCP server URL (if using remote agent)
   mcpConnectionType: z.enum(['http', 'stdio']).default('http'),
