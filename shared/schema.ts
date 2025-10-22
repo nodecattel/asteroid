@@ -227,29 +227,22 @@ export const userSchema = z.object({
 export type User = z.infer<typeof userSchema>;
 export type InsertUser = Omit<User, 'id'>;
 
-// AI Agent Schema
+// AI Agent Schema - Simplified for intuitive user experience
 export const aiAgentConfigSchema = z.object({
   // Agent Identity
   modelName: z.string(), // e.g., "Claude 3.5 Sonnet", "GPT-4", "DeepSeek Chat V3.1"
   modelProvider: z.string(), // e.g., "Anthropic", "OpenAI", "DeepSeek"
   
-  // Trading Parameters
-  startingCapital: z.number().positive(),
-  maxPositionSize: z.number().positive(), // Max USDT per position
-  maxOpenPositions: z.number().int().positive().default(3),
-  allowedSymbols: z.array(z.string()).default(['BTCUSDT', 'ETHUSDT', 'SOLUSDT']),
-  defaultLeverage: z.number().int().min(1).max(125).default(10),
+  // Investment Parameters (simplified)
+  startingCapital: z.number().positive(), // Initial USDT balance
+  maxPositionSize: z.number().positive(), // Max USDT per single position
+  targetProfitUsdt: z.number().positive(), // Capital gain goal in USDT
+  maxLossUsdt: z.number().positive(), // Maximum acceptable loss in USDT
   
-  // Risk Management
-  maxDrawdownPercent: z.number().positive().default(10), // Stop trading if down X%
-  stopLossPercent: z.number().positive().default(2.0),
-  takeProfitPercent: z.number().positive().default(5.0),
+  // Trading Scope
+  allowedSymbols: z.array(z.string()).default(['BTCUSDT', 'ETHUSDT', 'SOLUSDT']), // Markets agent can trade
   
-  // Agent Behavior
-  decisionIntervalSeconds: z.number().int().min(60).default(180), // How often agent makes decisions (3 min default)
-  enableAutoTrading: z.boolean().default(true), // If false, agent only analyzes but doesn't trade
-  
-  // MCP Connection
+  // MCP Connection (internal config)
   mcpEndpoint: z.string().url().optional(), // HTTP MCP server URL (if using remote agent)
   mcpConnectionType: z.enum(['http', 'stdio']).default('http'),
 });

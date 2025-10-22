@@ -8,20 +8,30 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Switch } from "@/components/ui/switch";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { aiAgentConfigSchema, type AIAgentInstance, type AIAgentTrade } from "@shared/schema";
-import { Play, Pause, Trash2, Bot, TrendingUp, TrendingDown, DollarSign, Activity } from "lucide-react";
+import { Play, Pause, Trash2, Bot, TrendingUp, TrendingDown, DollarSign, Activity, Target, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { z } from "zod";
 import StatusBar from "@/components/StatusBar";
+import { Checkbox } from "@/components/ui/checkbox";
 
+// Form schema with string handling for allowedSymbols
 const createAgentFormSchema = aiAgentConfigSchema.omit({ allowedSymbols: true }).extend({
-  allowedSymbolsString: z.string(),
+  allowedSymbols: z.array(z.string()).min(1, "Select at least one market"),
 });
 
 type CreateAgentFormData = z.infer<typeof createAgentFormSchema>;
+
+interface Market {
+  symbol: string;
+  baseAsset: string;
+  quoteAsset: string;
+  volume24h: number;
+  quoteVolume24h: number;
+  priceChangePercent24h: number;
+}
 
 export default function AgentsPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -37,8 +47,15 @@ export default function AgentsPage() {
     queryKey: ['/api/agents/trades/all'],
   });
 
+  // Fetch available markets
+  const { data: marketsData } = useQuery<{ success: boolean; data: Market[] }>({
+    queryKey: ['/api/markets'],
+    refetchInterval: 60 * 1000,
+  });
+
   const agents = agentsData?.data || [];
   const trades = tradesData?.data || [];
+  const markets = marketsData?.data || [];
 
   // Create agent mutation
   const createAgentMutation = useMutation({
@@ -95,27 +112,16 @@ export default function AgentsPage() {
       modelName: "Claude 3.5 Sonnet",
       modelProvider: "Anthropic",
       startingCapital: 1000,
-      maxPositionSize: 300,
-      maxOpenPositions: 3,
-      allowedSymbolsString: "BTCUSDT,ETHUSDT,SOLUSDT",
-      defaultLeverage: 10,
-      maxDrawdownPercent: 10,
-      stopLossPercent: 2.0,
-      takeProfitPercent: 5.0,
-      decisionIntervalSeconds: 180,
-      enableAutoTrading: true,
+      maxPositionSize: 200,
+      targetProfitUsdt: 100,
+      maxLossUsdt: 100,
+      allowedSymbols: [],
       mcpConnectionType: 'http',
     },
   });
 
   function onSubmit(data: CreateAgentFormData) {
-    // Transform the data to match the API schema
-    const { allowedSymbolsString, ...rest } = data;
-    const transformedData = {
-      ...rest,
-      allowedSymbols: allowedSymbolsString.split(',').map((s) => s.trim()),
-    };
-    createAgentMutation.mutate(transformedData);
+    createAgentMutation.mutate(data);
   }
 
   const handleToggleAgent = (agent: AIAgentInstance) => {
@@ -146,6 +152,11 @@ export default function AgentsPage() {
   const totalBalance = agents.reduce((sum, a) => sum + a.currentBalance, 0);
   const totalPnL = agents.reduce((sum, a) => sum + a.totalPnL, 0);
 
+  // Top markets by volume for easy selection
+  const topMarkets = [...markets]
+    .sort((a, b) => b.quoteVolume24h - a.quoteVolume24h)
+    .slice(0, 20);
+
   return (
     <div className="min-h-screen bg-background">
       <StatusBar
@@ -165,7 +176,7 @@ export default function AgentsPage() {
             AI Trading Agents
           </h1>
           <p className="text-muted-foreground mt-1">
-            Autonomous AI agents trading via MCP protocol
+            Autonomous AI agents trading via Model Context Protocol
           </p>
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
@@ -179,209 +190,217 @@ export default function AgentsPage() {
             <DialogHeader>
               <DialogTitle>Create AI Trading Agent</DialogTitle>
               <DialogDescription>
-                Configure a new AI agent to trade autonomously via MCP
+                Configure a new AI agent with simple investment parameters
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="modelName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Model Name</FormLabel>
-                        <FormControl>
-                          <Input {...field} placeholder="Claude 3.5 Sonnet" data-testid="input-model-name" />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="modelProvider"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Provider</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                {/* AI Model Section */}
+                <div className="space-y-4">
+                  <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                    AI Model
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="modelProvider"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Provider</FormLabel>
+                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                              <SelectTrigger data-testid="select-provider">
+                                <SelectValue placeholder="Select provider" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              <SelectItem value="Anthropic">Anthropic (Claude)</SelectItem>
+                              <SelectItem value="OpenAI">OpenAI (GPT-4)</SelectItem>
+                              <SelectItem value="DeepSeek">DeepSeek</SelectItem>
+                              <SelectItem value="xAI">xAI (Grok)</SelectItem>
+                              <SelectItem value="Alibaba">Alibaba (Qwen)</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="modelName"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Model Name</FormLabel>
                           <FormControl>
-                            <SelectTrigger data-testid="select-provider">
-                              <SelectValue placeholder="Select provider" />
-                            </SelectTrigger>
+                            <Input {...field} placeholder="Claude 3.5 Sonnet" data-testid="input-model-name" />
                           </FormControl>
-                          <SelectContent>
-                            <SelectItem value="Anthropic">Anthropic</SelectItem>
-                            <SelectItem value="OpenAI">OpenAI</SelectItem>
-                            <SelectItem value="DeepSeek">DeepSeek</SelectItem>
-                            <SelectItem value="xAI">xAI (Grok)</SelectItem>
-                            <SelectItem value="Alibaba">Alibaba (Qwen)</SelectItem>
-                          </SelectContent>
-                        </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                {/* Investment Parameters Section */}
+                <div className="space-y-4">
+                  <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                    Investment Parameters
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="startingCapital"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Initial Investment (USDT)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              {...field}
+                              onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                              data-testid="input-starting-capital"
+                            />
+                          </FormControl>
+                          <FormDescription>Starting balance for the agent</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="maxPositionSize"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Max Position Size (USDT)</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              {...field}
+                              onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                              data-testid="input-max-position"
+                            />
+                          </FormControl>
+                          <FormDescription>Max per single trade</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="targetProfitUsdt"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2">
+                            <Target className="w-4 h-4 text-green-500" />
+                            Capital Gain Goal (USDT)
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              {...field}
+                              onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                              data-testid="input-target-profit"
+                            />
+                          </FormControl>
+                          <FormDescription>Stop when profit reaches this amount</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="maxLossUsdt"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="flex items-center gap-2">
+                            <AlertCircle className="w-4 h-4 text-red-500" />
+                            Max Acceptable Loss (USDT)
+                          </FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              {...field}
+                              onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                              data-testid="input-max-loss"
+                            />
+                          </FormControl>
+                          <FormDescription>Stop when loss reaches this amount</FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
+                {/* Market Selection Section */}
+                <div className="space-y-4">
+                  <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                    Trading Markets
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name="allowedSymbols"
+                    render={() => (
+                      <FormItem>
+                        <div className="mb-4">
+                          <FormLabel>Select Markets to Trade</FormLabel>
+                          <FormDescription>
+                            Agent will only trade these markets
+                          </FormDescription>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3 max-h-64 overflow-y-auto border rounded-lg p-4">
+                          {topMarkets.map((market) => (
+                            <FormField
+                              key={market.symbol}
+                              control={form.control}
+                              name="allowedSymbols"
+                              render={({ field }) => {
+                                return (
+                                  <FormItem
+                                    key={market.symbol}
+                                    className="flex flex-row items-start space-x-3 space-y-0"
+                                  >
+                                    <FormControl>
+                                      <Checkbox
+                                        checked={field.value?.includes(market.symbol)}
+                                        onCheckedChange={(checked) => {
+                                          return checked
+                                            ? field.onChange([...field.value, market.symbol])
+                                            : field.onChange(
+                                                field.value?.filter(
+                                                  (value) => value !== market.symbol
+                                                )
+                                              );
+                                        }}
+                                        data-testid={`checkbox-${market.symbol}`}
+                                      />
+                                    </FormControl>
+                                    <div className="space-y-1 leading-none">
+                                      <FormLabel className="text-sm font-medium cursor-pointer">
+                                        {market.symbol}
+                                      </FormLabel>
+                                      <p className="text-xs text-muted-foreground">
+                                        {market.priceChangePercent24h >= 0 ? '+' : ''}
+                                        {market.priceChangePercent24h.toFixed(2)}% • Vol: $
+                                        {(market.quoteVolume24h / 1000000).toFixed(1)}M
+                                      </p>
+                                    </div>
+                                  </FormItem>
+                                );
+                              }}
+                            />
+                          ))}
+                        </div>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="startingCapital"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Starting Capital (USDT)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                            data-testid="input-starting-capital"
-                          />
-                        </FormControl>
-                        <FormDescription>Initial USDT balance</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="maxPositionSize"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Max Position Size (USDT)</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                            data-testid="input-max-position"
-                          />
-                        </FormControl>
-                        <FormDescription>Max USDT per trade</FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name="allowedSymbolsString"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Allowed Symbols</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="BTCUSDT,ETHUSDT,SOLUSDT" data-testid="input-symbols" />
-                      </FormControl>
-                      <FormDescription>Comma-separated list of trading pairs</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <div className="grid grid-cols-3 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="defaultLeverage"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Leverage</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            {...field}
-                            onChange={(e) => field.onChange(parseInt(e.target.value))}
-                            data-testid="input-leverage"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="stopLossPercent"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Stop Loss %</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            step="0.1"
-                            {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                            data-testid="input-stop-loss"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="takeProfitPercent"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Take Profit %</FormLabel>
-                        <FormControl>
-                          <Input
-                            type="number"
-                            step="0.1"
-                            {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                            data-testid="input-take-profit"
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name="decisionIntervalSeconds"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Decision Interval (seconds)</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value))}
-                          data-testid="input-interval"
-                        />
-                      </FormControl>
-                      <FormDescription>How often the agent makes decisions (min 60s)</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="enableAutoTrading"
-                  render={({ field }) => (
-                    <FormItem className="flex items-center justify-between rounded-lg border p-4">
-                      <div className="space-y-0.5">
-                        <FormLabel className="text-base">Auto Trading</FormLabel>
-                        <FormDescription>
-                          Allow agent to execute trades automatically
-                        </FormDescription>
-                      </div>
-                      <FormControl>
-                        <Switch
-                          checked={field.value}
-                          onCheckedChange={field.onChange}
-                          data-testid="switch-auto-trading"
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-
-                <div className="flex gap-2 justify-end">
+                <div className="flex gap-2 justify-end pt-4 border-t">
                   <Button
                     type="button"
                     variant="outline"
@@ -483,8 +502,36 @@ export default function AgentsPage() {
                   </div>
                 </div>
 
+                {/* Goals Progress */}
+                <div className="space-y-2 pt-2 border-t">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <Target className="w-3 h-3" />
+                      Profit Goal
+                    </span>
+                    <span className="font-medium">
+                      ${agent.config.targetProfitUsdt}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" />
+                      Max Loss
+                    </span>
+                    <span className="font-medium">
+                      ${agent.config.maxLossUsdt}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Markets</span>
+                    <span className="font-medium">
+                      {agent.config.allowedSymbols.length}
+                    </span>
+                  </div>
+                </div>
+
                 {/* Position Info */}
-                <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center justify-between text-sm pt-2 border-t">
                   <span className="text-muted-foreground">Open Positions</span>
                   <Badge variant="outline" data-testid={`badge-positions-${agent.id}`}>
                     <Activity className="w-3 h-3 mr-1" />
