@@ -23,7 +23,25 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 const createAgentFormSchema = aiAgentConfigSchema.omit({ allowedSymbols: true, apiKey: true }).extend({
   allowedSymbols: z.array(z.string()).min(1, "Select at least one market"),
   apiKey: z.string().optional(),
-});
+}).refine(
+  (data) => {
+    // At least one profit target must be specified
+    return data.targetProfitUsdt !== undefined || data.targetProfitPercent !== undefined;
+  },
+  {
+    message: "Specify at least one profit target (USDT or %)",
+    path: ["targetProfitUsdt"],
+  }
+).refine(
+  (data) => {
+    // At least one loss limit must be specified
+    return data.maxLossUsdt !== undefined || data.maxLossPercent !== undefined;
+  },
+  {
+    message: "Specify at least one loss limit (USDT or %)",
+    path: ["maxLossUsdt"],
+  }
+);
 
 type CreateAgentFormData = z.infer<typeof createAgentFormSchema>;
 
@@ -137,8 +155,10 @@ export default function AgentsPage() {
       modelProvider: "",
       startingCapital: 1000,
       maxPositionSize: 200,
-      targetProfitUsdt: 100,
-      maxLossUsdt: 100,
+      targetProfitUsdt: undefined,
+      maxLossUsdt: undefined,
+      targetProfitPercent: 10, // Default 10% profit goal
+      maxLossPercent: 5, // Default 5% max loss
       allowedSymbols: [],
       apiKey: "",
       mcpConnectionType: 'http',
@@ -408,51 +428,108 @@ export default function AgentsPage() {
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="targetProfitUsdt"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="flex items-center gap-2">
-                              <Target className="w-4 h-4 text-green-500" />
-                              Capital Gain Goal (USDT)
-                            </FormLabel>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                {...field}
-                                onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                                data-testid="input-target-profit"
-                              />
-                            </FormControl>
-                            <FormDescription>Agent stops when profit reaches this</FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <FormField
-                        control={form.control}
-                        name="maxLossUsdt"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="flex items-center gap-2">
-                              <AlertCircle className="w-4 h-4 text-red-500" />
-                              Max Acceptable Loss (USDT)
-                            </FormLabel>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                {...field}
-                                onChange={(e) => field.onChange(parseFloat(e.target.value))}
-                                data-testid="input-max-loss"
-                              />
-                            </FormControl>
-                            <FormDescription>Agent stops when loss reaches this</FormDescription>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                    {/* Profit Target Row */}
+                    <div className="space-y-2">
+                      <div className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+                        <Target className="w-3 h-3 text-green-500" />
+                        Profit Target (specify at least one)
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="targetProfitUsdt"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>USDT Amount</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  {...field}
+                                  value={field.value ?? ''}
+                                  onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                  placeholder="e.g., 100"
+                                  data-testid="input-target-profit-usdt"
+                                />
+                              </FormControl>
+                              <FormDescription className="text-xs">Close all when profit hits this</FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="targetProfitPercent"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Percentage %</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  {...field}
+                                  value={field.value ?? ''}
+                                  onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                  placeholder="e.g., 10"
+                                  data-testid="input-target-profit-percent"
+                                />
+                              </FormControl>
+                              <FormDescription className="text-xs">% gain from starting capital</FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Loss Limit Row */}
+                    <div className="space-y-2">
+                      <div className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+                        <AlertCircle className="w-3 h-3 text-red-500" />
+                        Loss Limit (specify at least one)
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="maxLossUsdt"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>USDT Amount</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  {...field}
+                                  value={field.value ?? ''}
+                                  onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                  placeholder="e.g., 50"
+                                  data-testid="input-max-loss-usdt"
+                                />
+                              </FormControl>
+                              <FormDescription className="text-xs">Close all when loss hits this</FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                        <FormField
+                          control={form.control}
+                          name="maxLossPercent"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>Percentage %</FormLabel>
+                              <FormControl>
+                                <Input
+                                  type="number"
+                                  {...field}
+                                  value={field.value ?? ''}
+                                  onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : undefined)}
+                                  placeholder="e.g., 5"
+                                  data-testid="input-max-loss-percent"
+                                />
+                              </FormControl>
+                              <FormDescription className="text-xs">% loss from starting capital</FormDescription>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
                     </div>
                   </div>
 
