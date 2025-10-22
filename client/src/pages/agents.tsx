@@ -49,6 +49,10 @@ export default function AgentsPage() {
   const [selectedProvider, setSelectedProvider] = useState<string>("");
   const { toast } = useToast();
 
+  // Check for market query parameter to auto-open create dialog
+  const urlParams = new URLSearchParams(window.location.search);
+  const preSelectedMarket = urlParams.get('market');
+
   // Fetch available models
   const { data: modelsData } = useQuery<{ data: AvailableModel[]; hasAnyKeys: boolean }>({
     queryKey: ['/api/agents/available-models'],
@@ -140,6 +144,21 @@ export default function AgentsPage() {
       mcpConnectionType: 'http',
     },
   });
+
+  // Handle pre-selected market from query parameter
+  useEffect(() => {
+    if (preSelectedMarket && markets.length > 0 && !isCreateDialogOpen) {
+      const marketExists = markets.some(m => m.symbol === preSelectedMarket);
+      if (marketExists) {
+        // Pre-fill the form with the selected market
+        form.setValue('allowedSymbols', [preSelectedMarket]);
+        setIsCreateDialogOpen(true);
+        
+        // Clear the URL parameter
+        window.history.replaceState({}, '', '/agents');
+      }
+    }
+  }, [preSelectedMarket, markets, isCreateDialogOpen, form]);
 
   // Update model name when provider changes
   useEffect(() => {
