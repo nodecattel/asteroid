@@ -44,17 +44,22 @@ The frontend uses React and TypeScript with Vite, featuring a custom terminal-in
 - **Auto-Scroll Pause**: Activity Feed includes a Pause/Resume toggle for reviewing logs.
 - **Enhanced Recent Orders**: Real-time WebSocket updates, auto-scroll with pause/resume, and increased limit to 20 orders.
 - **MCP Server Integration**: Integrates Model Context Protocol server for autonomous AI agent trading, exposing trading tools, real-time resources, and AI decision prompts.
-- **AI Agent Trading Platform** (Simplified Oct 22, 2025): 
+- **AI Agent Trading Platform** (Enhanced Oct 22, 2025): 
   - Full-featured `/agents` page with intuitive agent management UI
   - **Simplified Configuration**: Focus on investment goals (starting capital, max position size, profit goal, max loss) rather than technical trading parameters
-  - **Market Selector**: Multi-select checkbox interface for choosing trading pairs (similar to bot creation)
+  - **Smart Model Detection**: Automatically detects available AI providers based on configured API keys in environment variables
+  - **Dynamic Model Selection**: Provider selection auto-populates with available models, sorted and filtered based on API key availability
+  - **Multi-select Market Selector**: Checkbox interface for choosing trading pairs with volume and 24h change info
+  - **Optional API Key Override**: Per-agent API key configuration for users who want to use different credentials
+  - **Comprehensive Onboarding**: Info banners explain MCP capability and setup requirements for users unfamiliar with AI agents
+  - **Environment Configuration**: Updated `.env.example` with detailed AI provider API key setup instructions (Anthropic, OpenAI, DeepSeek, xAI, Qwen)
   - Create, start, pause, and delete AI trading agents with minimal complexity
   - Independent capital allocation per agent with clear risk parameters
   - Real-time performance tracking (balance, P&L, win rate, Sharpe ratio)
   - Agent trade history feed with reasoning/commentary
   - Multi-model support (Claude, GPT-4, DeepSeek, Grok, Qwen)
   - Navigation integration via StatusBar (AI Agents / Bots toggle)
-  - Complete CRUD API routes for agent lifecycle
+  - Complete CRUD API routes for agent lifecycle including `/api/agents/available-models`
   - WebSocket integration for real-time updates
   - MCP protocol ready for autonomous AI trading
   - **Removed Technical Parameters**: Eliminated leverage, stop-loss %, take-profit %, decision interval, max drawdown, max open positions from user configuration (handled automatically by AI)
