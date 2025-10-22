@@ -7,7 +7,11 @@ import {
   type ActivityLog,
   type HourlyVolume,
   type BotConfig,
-  type Trade
+  type Trade,
+  type AIAgentInstance,
+  type AIAgentConfig,
+  type AIAgentTrade,
+  type AIAgentReasoning
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -45,6 +49,24 @@ export interface IStorage {
   createTrade(trade: Omit<Trade, 'id'>): Promise<Trade>;
   getTradesByBot(botId: string, limit?: number): Promise<Trade[]>;
   calculateRealizedPnL(botId: string): Promise<number>;
+  
+  // AI Agents
+  createAIAgent(config: AIAgentConfig): Promise<AIAgentInstance>;
+  getAIAgent(id: string): Promise<AIAgentInstance | undefined>;
+  getAllAIAgents(): Promise<AIAgentInstance[]>;
+  updateAIAgent(id: string, updates: Partial<AIAgentInstance>): Promise<AIAgentInstance>;
+  deleteAIAgent(id: string): Promise<void>;
+  
+  // AI Agent Trades
+  createAIAgentTrade(trade: Omit<AIAgentTrade, 'id'>): Promise<AIAgentTrade>;
+  getAIAgentTrades(agentId: string, limit?: number): Promise<AIAgentTrade[]>;
+  updateAIAgentTrade(id: string, updates: Partial<AIAgentTrade>): Promise<AIAgentTrade>;
+  getAllAIAgentTrades(limit?: number): Promise<AIAgentTrade[]>; // For global feed
+  
+  // AI Agent Reasoning
+  addAIAgentReasoning(reasoning: Omit<AIAgentReasoning, 'id'>): Promise<AIAgentReasoning>;
+  getAIAgentReasoning(agentId: string, limit?: number): Promise<AIAgentReasoning[]>;
+  getAllAIAgentReasoning(limit?: number): Promise<AIAgentReasoning[]>; // For global chat feed
 }
 
 export class MemStorage implements IStorage {
@@ -54,6 +76,9 @@ export class MemStorage implements IStorage {
   private activityLogs: Map<string, ActivityLog[]> = new Map();
   private hourlyVolume: Map<string, HourlyVolume[]> = new Map();
   private trades: Map<string, Trade[]> = new Map();
+  private aiAgents: Map<string, AIAgentInstance> = new Map();
+  private aiAgentTrades: Map<string, AIAgentTrade[]> = new Map();
+  private aiAgentReasoning: Map<string, AIAgentReasoning[]> = new Map();
 
   // Bot Instance Methods
   async createBotInstance(config: BotConfig): Promise<BotInstance> {
@@ -301,6 +326,131 @@ export class MemStorage implements IStorage {
     totalPnL -= totalCommission;
     
     return totalPnL;
+  }
+
+  // AI Agent Methods
+  async createAIAgent(config: AIAgentConfig): Promise<AIAgentInstance> {
+    const id = randomUUID();
+    const now = new Date().toISOString();
+    const instance: AIAgentInstance = {
+      id,
+      modelName: config.modelName,
+      modelProvider: config.modelProvider,
+      status: 'stopped',
+      config,
+      currentBalance: config.startingCapital,
+      totalPnL: 0,
+      totalTrades: 0,
+      winningTrades: 0,
+      losingTrades: 0,
+      winRate: 0,
+      maxDrawdown: 0,
+      openPositions: 0,
+      totalPositionValue: 0,
+      unrealizedPnL: 0,
+      sessionStart: now,
+      lastUpdate: now,
+    };
+    this.aiAgents.set(id, instance);
+    return instance;
+  }
+
+  async getAIAgent(id: string): Promise<AIAgentInstance | undefined> {
+    return this.aiAgents.get(id);
+  }
+
+  async getAllAIAgents(): Promise<AIAgentInstance[]> {
+    return Array.from(this.aiAgents.values());
+  }
+
+  async updateAIAgent(id: string, updates: Partial<AIAgentInstance>): Promise<AIAgentInstance> {
+    const instance = this.aiAgents.get(id);
+    if (!instance) throw new Error(`AI Agent ${id} not found`);
+    
+    const updated = { ...instance, ...updates, lastUpdate: new Date().toISOString() };
+    this.aiAgents.set(id, updated);
+    return updated;
+  }
+
+  async deleteAIAgent(id: string): Promise<void> {
+    this.aiAgents.delete(id);
+    this.aiAgentTrades.delete(id);
+    this.aiAgentReasoning.delete(id);
+  }
+
+  // AI Agent Trade Methods
+  async createAIAgentTrade(trade: Omit<AIAgentTrade, 'id'>): Promise<AIAgentTrade> {
+    const id = randomUUID();
+    const newTrade: AIAgentTrade = { id, ...trade };
+    
+    const trades = this.aiAgentTrades.get(trade.agentId) || [];
+    trades.push(newTrade);
+    this.aiAgentTrades.set(trade.agentId, trades);
+    
+    return newTrade;
+  }
+
+  async getAIAgentTrades(agentId: string, limit?: number): Promise<AIAgentTrade[]> {
+    const trades = this.aiAgentTrades.get(agentId) || [];
+    const sorted = [...trades].sort((a, b) => 
+      new Date(b.entryTime).getTime() - new Date(a.entryTime).getTime()
+    );
+    return limit ? sorted.slice(0, limit) : sorted;
+  }
+
+  async updateAIAgentTrade(id: string, updates: Partial<AIAgentTrade>): Promise<AIAgentTrade> {
+    for (const [agentId, trades] of Array.from(this.aiAgentTrades.entries())) {
+      const tradeIndex = trades.findIndex((t: AIAgentTrade) => t.id === id);
+      if (tradeIndex !== -1) {
+        const updated = { ...trades[tradeIndex], ...updates };
+        trades[tradeIndex] = updated;
+        this.aiAgentTrades.set(agentId, trades);
+        return updated;
+      }
+    }
+    throw new Error(`AI Agent Trade ${id} not found`);
+  }
+
+  async getAllAIAgentTrades(limit?: number): Promise<AIAgentTrade[]> {
+    const allTrades: AIAgentTrade[] = [];
+    for (const trades of Array.from(this.aiAgentTrades.values())) {
+      allTrades.push(...trades);
+    }
+    const sorted = allTrades.sort((a, b) => 
+      new Date(b.entryTime).getTime() - new Date(a.entryTime).getTime()
+    );
+    return limit ? sorted.slice(0, limit) : sorted;
+  }
+
+  // AI Agent Reasoning Methods
+  async addAIAgentReasoning(reasoning: Omit<AIAgentReasoning, 'id'>): Promise<AIAgentReasoning> {
+    const id = randomUUID();
+    const newReasoning: AIAgentReasoning = { id, ...reasoning };
+    
+    const allReasoning = this.aiAgentReasoning.get(reasoning.agentId) || [];
+    allReasoning.push(newReasoning);
+    this.aiAgentReasoning.set(reasoning.agentId, allReasoning);
+    
+    return newReasoning;
+  }
+
+  async getAIAgentReasoning(agentId: string, limit?: number): Promise<AIAgentReasoning[]> {
+    const reasoning = this.aiAgentReasoning.get(agentId) || [];
+    const sorted = [...reasoning].sort((a, b) => 
+      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+    return limit ? sorted.slice(0, limit) : sorted;
+  }
+
+  async getAllAIAgentReasoning(limit?: number): Promise<AIAgentReasoning[]> {
+    const allReasoning: AIAgentReasoning[] = [];
+    for (const reasoning of Array.from(this.aiAgentReasoning.values())) {
+      allReasoning.push(...reasoning);
+    }
+    const sorted = allReasoning.sort((a, b) => 
+      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+    return limit ? sorted.slice(0, limit) : sorted;
   }
 }
 

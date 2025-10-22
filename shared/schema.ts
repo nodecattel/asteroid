@@ -226,3 +226,129 @@ export const userSchema = z.object({
 
 export type User = z.infer<typeof userSchema>;
 export type InsertUser = Omit<User, 'id'>;
+
+// AI Agent Schema
+export const aiAgentConfigSchema = z.object({
+  // Agent Identity
+  modelName: z.string(), // e.g., "Claude 3.5 Sonnet", "GPT-4", "DeepSeek Chat V3.1"
+  modelProvider: z.string(), // e.g., "Anthropic", "OpenAI", "DeepSeek"
+  
+  // Trading Parameters
+  startingCapital: z.number().positive(),
+  maxPositionSize: z.number().positive(), // Max USDT per position
+  maxOpenPositions: z.number().int().positive().default(3),
+  allowedSymbols: z.array(z.string()).default(['BTCUSDT', 'ETHUSDT', 'SOLUSDT']),
+  defaultLeverage: z.number().int().min(1).max(125).default(10),
+  
+  // Risk Management
+  maxDrawdownPercent: z.number().positive().default(10), // Stop trading if down X%
+  stopLossPercent: z.number().positive().default(2.0),
+  takeProfitPercent: z.number().positive().default(5.0),
+  
+  // Agent Behavior
+  decisionIntervalSeconds: z.number().int().min(60).default(180), // How often agent makes decisions (3 min default)
+  enableAutoTrading: z.boolean().default(true), // If false, agent only analyzes but doesn't trade
+  
+  // MCP Connection
+  mcpEndpoint: z.string().url().optional(), // HTTP MCP server URL (if using remote agent)
+  mcpConnectionType: z.enum(['http', 'stdio']).default('http'),
+});
+
+export type AIAgentConfig = z.infer<typeof aiAgentConfigSchema>;
+
+// AI Agent Instance Schema
+export const aiAgentInstanceSchema = z.object({
+  id: z.string(),
+  modelName: z.string(),
+  modelProvider: z.string(),
+  status: z.enum(['running', 'paused', 'stopped', 'error']),
+  config: aiAgentConfigSchema,
+  
+  // Performance Metrics
+  currentBalance: z.number(),
+  totalPnL: z.number().default(0),
+  totalTrades: z.number().int().default(0),
+  winningTrades: z.number().int().default(0),
+  losingTrades: z.number().int().default(0),
+  winRate: z.number().default(0), // Percentage
+  sharpeRatio: z.number().optional(),
+  maxDrawdown: z.number().default(0),
+  
+  // Current State
+  openPositions: z.number().int().default(0),
+  totalPositionValue: z.number().default(0),
+  unrealizedPnL: z.number().default(0),
+  
+  // Timestamps
+  sessionStart: z.string().datetime(),
+  lastDecision: z.string().datetime().optional(),
+  lastUpdate: z.string().datetime(),
+});
+
+export type AIAgentInstance = z.infer<typeof aiAgentInstanceSchema>;
+
+// AI Agent Trade Schema
+export const aiAgentTradeSchema = z.object({
+  id: z.string(),
+  agentId: z.string(),
+  modelName: z.string(),
+  
+  // Trade Details
+  symbol: z.string(),
+  side: z.enum(['BUY', 'SELL']),
+  type: z.enum(['LONG', 'SHORT']),
+  entryPrice: z.number(),
+  exitPrice: z.number().optional(),
+  quantity: z.number(),
+  leverage: z.number(),
+  
+  // P&L
+  notional: z.number(), // Entry notional value
+  realizedPnL: z.number().default(0),
+  unrealizedPnL: z.number().default(0),
+  
+  // Trade Management
+  stopLossPrice: z.number().optional(),
+  takeProfitPrice: z.number().optional(),
+  holdingTime: z.number().optional(), // Seconds
+  
+  // AI Reasoning
+  entryReason: z.string(), // Why the agent entered this trade
+  exitReason: z.string().optional(), // Why the agent exited
+  confidence: z.number().min(0).max(1).optional(), // Agent's confidence level (0-1)
+  
+  // Timestamps
+  entryTime: z.string().datetime(),
+  exitTime: z.string().datetime().optional(),
+  
+  // Exchange IDs
+  entryOrderId: z.string().optional(),
+  exitOrderId: z.string().optional(),
+  stopLossOrderId: z.string().optional(),
+  takeProfitOrderId: z.string().optional(),
+});
+
+export type AIAgentTrade = z.infer<typeof aiAgentTradeSchema>;
+
+// AI Agent Reasoning/Commentary Schema
+export const aiAgentReasoningSchema = z.object({
+  id: z.string(),
+  agentId: z.string(),
+  modelName: z.string(),
+  timestamp: z.string().datetime(),
+  
+  // Market Analysis
+  marketCondition: z.string(), // Agent's view of current market
+  
+  // Decision
+  decision: z.enum(['hold', 'enter_long', 'enter_short', 'close_position', 'no_action']),
+  reasoning: z.string(), // Full reasoning text
+  
+  // Context
+  symbols: z.array(z.string()), // Which markets analyzed
+  accountBalance: z.number(),
+  openPositions: z.number().int(),
+  riskLevel: z.enum(['low', 'medium', 'high']),
+});
+
+export type AIAgentReasoning = z.infer<typeof aiAgentReasoningSchema>;
