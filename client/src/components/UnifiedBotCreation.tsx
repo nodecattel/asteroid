@@ -24,51 +24,51 @@ export default function UnifiedBotCreation({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]" data-testid="dialog-unified-bot-creation">
+      <DialogContent className="max-w-[95vw] sm:max-w-[600px] max-h-[90vh] overflow-y-auto" data-testid="dialog-unified-bot-creation">
         <DialogHeader>
-          <DialogTitle className="text-xl">Create Trader for {marketSymbol}</DialogTitle>
-          <DialogDescription>
+          <DialogTitle className="text-lg sm:text-xl">Create Trader for {marketSymbol}</DialogTitle>
+          <DialogDescription className="text-xs sm:text-sm">
             Choose the type of trader you want to create for this market
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid gap-4 py-4">
+        <div className="grid gap-3 sm:gap-4 py-3 sm:py-4">
           <Card 
             className="cursor-pointer hover-elevate active-elevate-2 transition-all"
             onClick={() => handleSelect('traditional')}
             data-testid="card-create-traditional-bot"
           >
-            <CardHeader className="pb-3">
-              <div className="flex items-start gap-3">
-                <div className="p-2 rounded-md bg-primary/10">
-                  <Bot className="h-6 w-6 text-primary" />
+            <CardHeader className="pb-2 sm:pb-3">
+              <div className="flex items-start gap-2 sm:gap-3">
+                <div className="p-1.5 sm:p-2 rounded-md bg-primary/10 shrink-0">
+                  <Bot className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                 </div>
-                <div className="flex-1">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    Volume Generation Bot
-                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                <div className="flex-1 min-w-0">
+                  <CardTitle className="text-sm sm:text-base flex items-center gap-1.5 sm:gap-2">
+                    <span className="truncate">Volume Generation Bot</span>
+                    <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground shrink-0" />
                   </CardTitle>
-                  <CardDescription className="text-xs mt-1">
+                  <CardDescription className="text-xs mt-0.5 sm:mt-1">
                     Traditional automated trading bot
                   </CardDescription>
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <p className="text-sm text-muted-foreground">
+            <CardContent className="space-y-1.5 sm:space-y-2">
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Create a traditional volume generation bot with manual configuration for:
               </p>
-              <ul className="text-xs text-muted-foreground space-y-1 ml-4 list-disc">
+              <ul className="text-xs text-muted-foreground space-y-0.5 sm:space-y-1 ml-4 list-disc">
                 <li>Precise order placement and spread control</li>
                 <li>Fixed leverage and margin allocation</li>
                 <li>Customizable trading parameters</li>
                 <li>Risk management with stop-loss/take-profit</li>
               </ul>
-              <div className="pt-2">
+              <div className="pt-1.5 sm:pt-2">
                 <Button 
                   variant="outline" 
                   size="sm" 
-                  className="w-full"
+                  className="w-full text-xs sm:text-sm"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleSelect('traditional');
@@ -86,36 +86,36 @@ export default function UnifiedBotCreation({
             onClick={() => handleSelect('agent')}
             data-testid="card-create-ai-agent"
           >
-            <CardHeader className="pb-3">
-              <div className="flex items-start gap-3">
-                <div className="p-2 rounded-md bg-primary/10">
-                  <Sparkles className="h-6 w-6 text-primary" />
+            <CardHeader className="pb-2 sm:pb-3">
+              <div className="flex items-start gap-2 sm:gap-3">
+                <div className="p-1.5 sm:p-2 rounded-md bg-primary/10 shrink-0">
+                  <Sparkles className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
                 </div>
-                <div className="flex-1">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    AI Trading Agent
-                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                <div className="flex-1 min-w-0">
+                  <CardTitle className="text-sm sm:text-base flex items-center gap-1.5 sm:gap-2">
+                    <span className="truncate">AI Trading Agent</span>
+                    <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground shrink-0" />
                   </CardTitle>
-                  <CardDescription className="text-xs mt-1">
+                  <CardDescription className="text-xs mt-0.5 sm:mt-1">
                     Autonomous AI-powered trader (MCP)
                   </CardDescription>
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <p className="text-sm text-muted-foreground">
+            <CardContent className="space-y-1.5 sm:space-y-2">
+              <p className="text-xs sm:text-sm text-muted-foreground">
                 Create an AI agent that makes autonomous trading decisions using:
               </p>
-              <ul className="text-xs text-muted-foreground space-y-1 ml-4 list-disc">
+              <ul className="text-xs text-muted-foreground space-y-0.5 sm:space-y-1 ml-4 list-disc">
                 <li>Multiple AI models (Claude, GPT-4, DeepSeek, Grok, Qwen)</li>
                 <li>Simple investment goal configuration</li>
                 <li>Autonomous strategy adaptation</li>
                 <li>Real-time market analysis and reasoning</li>
               </ul>
-              <div className="pt-2">
+              <div className="pt-1.5 sm:pt-2">
                 <Button 
                   size="sm" 
-                  className="w-full"
+                  className="w-full text-xs sm:text-sm"
                   onClick={(e) => {
                     e.stopPropagation();
                     handleSelect('agent');
@@ -129,7 +129,7 @@ export default function UnifiedBotCreation({
           </Card>
         </div>
 
-        <div className="text-xs text-muted-foreground text-center pb-2">
+        <div className="text-[10px] sm:text-xs text-muted-foreground text-center pb-1 sm:pb-2 px-2">
           Both types will trade on {marketSymbol} with independent capital allocation
         </div>
       </DialogContent>
