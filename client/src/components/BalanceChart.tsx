@@ -135,7 +135,7 @@ export default function BalanceChart({ history }: BalanceChartProps) {
                 <Line
                   type="monotone"
                   dataKey="balance"
-                  stroke={(entry: any) => entry.color || 'hsl(var(--primary))'}
+                  stroke="hsl(var(--primary))"
                   strokeWidth={2}
                   dot={<CustomDot />}
                   activeDot={<CustomActiveDot />}
