@@ -554,5 +554,172 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ===== AI AGENT ROUTES =====
+
+  // Get all AI agents (protected)
+  app.get('/api/agents', requireAuth, async (req, res) => {
+    try {
+      const agents = await storage.getAllAIAgents();
+      res.json({
+        success: true,
+        data: agents
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  // Create new AI agent (protected)
+  app.post('/api/agents', requireAuth, async (req, res) => {
+    try {
+      const agent = await storage.createAIAgent(req.body);
+      
+      // Broadcast to all clients
+      io.emit('agentCreated', agent);
+      
+      res.json({
+        success: true,
+        data: agent
+      });
+    } catch (error: any) {
+      res.status(400).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  // Get specific AI agent (protected)
+  app.get('/api/agents/:id', requireAuth, async (req, res) => {
+    try {
+      const agent = await storage.getAIAgent(req.params.id);
+      if (!agent) {
+        return res.status(404).json({
+          success: false,
+          error: 'Agent not found'
+        });
+      }
+      res.json({
+        success: true,
+        data: agent
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  // Update AI agent (start/stop/pause) (protected)
+  app.patch('/api/agents/:id', requireAuth, async (req, res) => {
+    try {
+      const agent = await storage.updateAIAgent(req.params.id, req.body);
+      
+      // Broadcast to all clients
+      io.emit('agentUpdated', agent);
+      
+      res.json({
+        success: true,
+        data: agent
+      });
+    } catch (error: any) {
+      res.status(400).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  // Delete AI agent (protected)
+  app.delete('/api/agents/:id', requireAuth, async (req, res) => {
+    try {
+      await storage.deleteAIAgent(req.params.id);
+      
+      // Broadcast to all clients
+      io.emit('agentDeleted', req.params.id);
+      
+      res.json({
+        success: true
+      });
+    } catch (error: any) {
+      res.status(400).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  // Get agent trades (protected)
+  app.get('/api/agents/:id/trades', requireAuth, async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
+      const trades = await storage.getAIAgentTrades(req.params.id, limit);
+      res.json({
+        success: true,
+        data: trades
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  // Get agent reasoning/commentary (protected)
+  app.get('/api/agents/:id/reasoning', requireAuth, async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
+      const reasoning = await storage.getAIAgentReasoning(req.params.id, limit);
+      res.json({
+        success: true,
+        data: reasoning
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  // Get all agent trades (global feed) (protected)
+  app.get('/api/agents/trades/all', requireAuth, async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 100;
+      const trades = await storage.getAllAIAgentTrades(limit);
+      res.json({
+        success: true,
+        data: trades
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
+  // Get all agent reasoning (global chat feed) (protected)
+  app.get('/api/agents/reasoning/all', requireAuth, async (req, res) => {
+    try {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 50;
+      const reasoning = await storage.getAllAIAgentReasoning(limit);
+      res.json({
+        success: true,
+        data: reasoning
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message
+      });
+    }
+  });
+
   return httpServer;
 }

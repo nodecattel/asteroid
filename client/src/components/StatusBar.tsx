@@ -1,9 +1,10 @@
-import { Activity, Pause, Play, Settings, LogOut } from "lucide-react";
+import { Activity, Pause, Play, Settings, LogOut, Bot, BarChart3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
+import { useLocation } from "wouter";
 import asteroidLogo from "@assets/asteroid_1761014274709.png";
 
 interface StatusBarProps {
@@ -27,6 +28,8 @@ export default function StatusBar({
   onPauseResume,
   onSettings,
 }: StatusBarProps) {
+  const [location, setLocation] = useLocation();
+  
   const statusConfig = {
     running: { label: "Running", color: "bg-primary", icon: Activity },
     paused: { label: "Paused", color: "bg-muted-foreground", icon: Pause },
@@ -103,33 +106,57 @@ export default function StatusBar({
         </div>
         
         <div className="flex items-center gap-1 sm:gap-2">
+          {location === '/dashboard' || location === '/' ? (
+            <>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onPauseResume}
+                data-testid="button-pause-resume"
+                className="h-8"
+              >
+                {botStatus === "running" ? (
+                  <>
+                    <Pause className="h-3 w-3 sm:h-3.5 sm:w-3.5 sm:mr-1.5" />
+                    <span className="hidden sm:inline">Pause</span>
+                  </>
+                ) : (
+                  <>
+                    <Play className="h-3 w-3 sm:h-3.5 sm:w-3.5 sm:mr-1.5" />
+                    <span className="hidden sm:inline">Resume</span>
+                  </>
+                )}
+              </Button>
+              <Button
+                size="icon"
+                variant="ghost"
+                onClick={onSettings}
+                data-testid="button-settings"
+                className="h-8 w-8"
+              >
+                <Settings className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              </Button>
+            </>
+          ) : null}
           <Button
             size="sm"
-            variant="outline"
-            onClick={onPauseResume}
-            data-testid="button-pause-resume"
+            variant={location === '/agents' ? 'default' : 'outline'}
+            onClick={() => setLocation('/agents')}
+            data-testid="button-nav-agents"
             className="h-8"
           >
-            {botStatus === "running" ? (
-              <>
-                <Pause className="h-3 w-3 sm:h-3.5 sm:w-3.5 sm:mr-1.5" />
-                <span className="hidden sm:inline">Pause</span>
-              </>
-            ) : (
-              <>
-                <Play className="h-3 w-3 sm:h-3.5 sm:w-3.5 sm:mr-1.5" />
-                <span className="hidden sm:inline">Resume</span>
-              </>
-            )}
+            <Bot className="h-3 w-3 sm:h-3.5 sm:w-3.5 sm:mr-1.5" />
+            <span className="hidden sm:inline">AI Agents</span>
           </Button>
           <Button
-            size="icon"
-            variant="ghost"
-            onClick={onSettings}
-            data-testid="button-settings"
-            className="h-8 w-8"
+            size="sm"
+            variant={location === '/dashboard' || location === '/' ? 'default' : 'outline'}
+            onClick={() => setLocation('/dashboard')}
+            data-testid="button-nav-dashboard"
+            className="h-8"
           >
-            <Settings className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+            <BarChart3 className="h-3 w-3 sm:h-3.5 sm:w-3.5 sm:mr-1.5" />
+            <span className="hidden sm:inline">Bots</span>
           </Button>
           <LogoutButton />
         </div>
