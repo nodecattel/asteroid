@@ -6,10 +6,26 @@ Astroid is a trading bot designed for the Aster Dex cryptocurrency exchange, aut
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
+## Recent Updates
+
+### October 23, 2025
+- **AI Provider Icon Integration**: Integrated lobehub icon library for professional AI provider brand logos
+  - AIProviderIcon component uses lobehub CDN with dark/light mode support
+  - AIProviderAvatar component with brand-colored circular backgrounds
+  - Chart data points now use provider-specific brand colors (Anthropic: #D97757, OpenAI: #10A37F, DeepSeek: #0066FF, xAI: #000000, Alibaba: #FF6A00)
+  - Backend returns `brandColor` instead of emoji icons
+  
+- **Docker Build Fix**: Fixed "tsx: not found" error in production Docker builds
+  - Implemented multi-stage Docker build for proper TypeScript compilation
+  - Builder stage: Installs all dependencies and builds the application
+  - Production stage: Contains only compiled code and runtime dependencies
+  - PostgreSQL enabled by default in docker-compose.yml for data persistence
+  - Updated README with troubleshooting section for Docker issues
+
 ## System Architecture
 
 ### UI/UX Decisions
-The frontend uses React and TypeScript with Vite, featuring a custom terminal-inspired monochrome design built with `shadcn/ui` components (Radix UI primitives) and Tailwind CSS. It emphasizes dark mode with strategic accent colors and is mobile-responsive. The Astroid logo is integrated into the login page, dashboard header, and as a favicon. A modern tabbed interface displays Aster Dex trading pairs with "Favorites" and "All markets" views, search, and multi-field sorting, designed for consistency with Aster Dex's native interface.
+The frontend uses React and TypeScript with Vite, featuring a custom terminal-inspired monochrome design built with `shadcn/ui` components (Radix UI primitives) and Tailwind CSS. It emphasizes dark mode with strategic accent colors and is mobile-responsive. The Astroid logo is integrated into the login page, dashboard header, and as a favicon. A modern tabbed interface displays Aster Dex trading pairs with "Favorites" and "All markets" views, search, and multi-field sorting, designed for consistency with Aster Dex's native interface. AI provider icons now use professional lobehub brand logos instead of emojis.
 
 ### Technical Implementations
 **Frontend**: Built with React, TypeScript, and Vite, using TanStack Query for state management and API caching. It includes protected routes with an authentication hook, Socket.IO for real-time updates, and Wouter for routing. Dynamic market selection automatically fetches and caches market data from Aster Dex.

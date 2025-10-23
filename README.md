@@ -112,30 +112,22 @@ Your `.env` file must include:
 
 ### Using PostgreSQL for Persistent Storage
 
-By default, Astroid uses in-memory storage (data is lost on restart). To enable PostgreSQL:
+Astroid now uses PostgreSQL by default in Docker deployments for data persistence. The database service is automatically started with the application.
 
-**Option 1: During `asteroid.sh` setup**
-- Select option 2 when asked about database type
-- The wizard will automatically configure everything
+**Database Configuration** (already in docker-compose.yml):
+- PostgreSQL 15 Alpine image for minimal footprint
+- Automatic health checks to ensure database is ready
+- Persistent volume storage at `postgres-data`
+- Default credentials: `asterdex` user with password from `.env`
 
-**Option 2: Manual configuration**
-1. Uncomment the `postgres` service in `docker-compose.yml`:
-   ```bash
-   sed -i 's/^  # postgres:/  postgres:/g; s/^  #   /    /g' docker-compose.yml
-   ```
+**To customize PostgreSQL settings**, update your `.env` file:
+```env
+DATABASE_URL=postgresql://asterdex:your_password@postgres:5432/asterdex
+POSTGRES_PASSWORD=your_password
+POSTGRES_PORT=5432  # External port (change if 5432 is already in use)
+```
 
-2. Update your `.env` file:
-   ```env
-   DATABASE_URL=postgresql://asterdex:your_password@postgres:5432/asterdex
-   POSTGRES_PASSWORD=your_password
-   POSTGRES_PORT=5432  # External port (change if 5432 is already in use)
-   ```
-
-3. Rebuild and restart:
-   ```bash
-   docker-compose down
-   docker-compose up -d
-   ```
+**Note:** If you previously used in-memory storage and uncommented the postgres service manually, the latest `docker-compose.yml` already has PostgreSQL enabled by default.
 
 ### Port Configuration
 
@@ -407,6 +399,28 @@ Unlike traditional bots, AI agents require minimal configuration:
 - **HTTPS**: Automatic when deployed on Replit (published apps)
 
 ## Troubleshooting
+
+### "tsx: not found" error in Docker logs
+If you see errors like `sh: tsx: not found` when running `docker-compose logs -f`:
+
+**This has been fixed in the latest version!** To resolve:
+
+```bash
+# Stop and remove existing containers and images
+docker-compose down
+docker rmi astroid-asterdex-bot 2>/dev/null || true
+
+# Rebuild with the fixed Dockerfile (uses multi-stage build)
+docker-compose build --no-cache
+
+# Start the services
+docker-compose up -d
+
+# Verify it's working
+docker-compose logs -f asterdex-bot
+```
+
+**What was fixed:** The Dockerfile now uses a multi-stage build that properly installs all dependencies (including build tools like tsx), builds the TypeScript application, then creates a lean production image with only the compiled code and runtime dependencies.
 
 ### Services won't start
 ```bash

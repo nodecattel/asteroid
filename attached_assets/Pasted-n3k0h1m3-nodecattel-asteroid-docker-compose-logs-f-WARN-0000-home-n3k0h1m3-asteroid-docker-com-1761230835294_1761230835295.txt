@@ -1,0 +1,142 @@
+n3k0h1m3@nodecattel:~/asteroid$ docker compose logs -f
+WARN[0000] /home/n3k0h1m3/asteroid/docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion 
+asterdex-volume-bot  | 
+asterdex-volume-bot  | > rest-express@1.0.0 dev
+asterdex-volume-bot  | > NODE_ENV=development tsx server/index.ts
+asterdex-volume-bot  | 
+asterdex-volume-bot  | sh: tsx: not found
+asterdex-volume-bot  | 
+asterdex-volume-bot  | > rest-express@1.0.0 dev
+asterdex-volume-bot  | > NODE_ENV=development tsx server/index.ts
+asterdex-volume-bot  | 
+asterdex-volume-bot  | sh: tsx: not found
+asterdex-volume-bot  | 
+asterdex-volume-bot  | > rest-express@1.0.0 dev
+asterdex-volume-bot  | > NODE_ENV=development tsx server/index.ts
+asterdex-volume-bot  | 
+asterdex-volume-bot  | sh: tsx: not found
+asterdex-volume-bot  | 
+asterdex-volume-bot  | > rest-express@1.0.0 dev
+asterdex-volume-bot  | > NODE_ENV=development tsx server/index.ts
+asterdex-volume-bot  | 
+asterdex-volume-bot  | sh: tsx: not found
+asterdex-volume-bot  | 
+asterdex-volume-bot  | > rest-express@1.0.0 dev
+asterdex-volume-bot  | > NODE_ENV=development tsx server/index.ts
+asterdex-volume-bot  | 
+asterdex-volume-bot  | sh: tsx: not found
+asterdex-volume-bot  | 
+asterdex-volume-bot  | > rest-express@1.0.0 dev
+asterdex-volume-bot  | > NODE_ENV=development tsx server/index.ts
+asterdex-volume-bot  | 
+asterdex-volume-bot  | sh: tsx: not found
+asterdex-volume-bot  | 
+asterdex-volume-bot  | > rest-express@1.0.0 dev
+asterdex-volume-bot  | > NODE_ENV=development tsx server/index.ts
+asterdex-volume-bot  | 
+asterdex-volume-bot  | sh: tsx: not found
+asterdex-volume-bot  | 
+asterdex-volume-bot  | > rest-express@1.0.0 dev
+asterdex-volume-bot  | > NODE_ENV=development tsx server/index.ts
+asterdex-volume-bot  | 
+asterdex-volume-bot  | sh: tsx: not found
+asterdex-volume-bot  | 
+asterdex-volume-bot  | > rest-express@1.0.0 dev
+asterdex-volume-bot  | > NODE_ENV=development tsx server/index.ts
+asterdex-volume-bot  | 
+asterdex-volume-bot  | sh: tsx: not found
+asterdex-volume-bot  | 
+asterdex-volume-bot  | > rest-express@1.0.0 dev
+asterdex-volume-bot  | > NODE_ENV=development tsx server/index.ts
+asterdex-volume-bot  | 
+asterdex-volume-bot  | sh: tsx: not found
+asterdex-volume-bot  | 
+asterdex-volume-bot  | > rest-express@1.0.0 dev
+asterdex-volume-bot  | > NODE_ENV=development tsx server/index.ts
+asterdex-volume-bot  | 
+asterdex-volume-bot  | sh: tsx: not found
+asterdex-volume-bot  | 
+asterdex-volume-bot  | > rest-express@1.0.0 dev
+asterdex-volume-bot  | > NODE_ENV=development tsx server/index.ts
+asterdex-volume-bot  | 
+asterdex-volume-bot  | sh: tsx: not found
+asterdex-volume-bot  | 
+asterdex-volume-bot  | > rest-express@1.0.0 dev
+asterdex-volume-bot  | > NODE_ENV=development tsx server/index.ts
+asterdex-volume-bot  | 
+asterdex-volume-bot  | sh: tsx: not found
+asterdex-volume-bot  | 
+asterdex-volume-bot  | > rest-express@1.0.0 dev
+asterdex-volume-bot  | > NODE_ENV=development tsx server/index.ts
+asterdex-volume-bot  | 
+asterdex-volume-bot  | sh: tsx: not found
+asterdex-volume-bot  | 
+asterdex-volume-bot  | > rest-express@1.0.0 dev
+asterdex-volume-bot  | > NODE_ENV=development tsx server/index.ts
+asterdex-volume-bot  | 
+asterdex-volume-bot  | sh: tsx: not found
+asterdex-volume-bot  | 
+asterdex-volume-bot  | > rest-express@1.0.0 dev
+asterdex-volume-bot  | > NODE_ENV=development tsx server/index.ts
+asterdex-volume-bot  | 
+asterdex-volume-bot  | sh: tsx: not found
+asterdex-postgres    | The files belonging to this database system will be owned by user "postgres".
+asterdex-postgres    | This user must also own the server process.
+asterdex-postgres    | 
+asterdex-postgres    | The database cluster will be initialized with locale "en_US.utf8".
+asterdex-postgres    | The default database encoding has accordingly been set to "UTF8".
+asterdex-postgres    | The default text search configuration will be set to "english".
+asterdex-postgres    | 
+asterdex-postgres    | Data page checksums are disabled.
+asterdex-postgres    | 
+asterdex-postgres    | fixing permissions on existing directory /var/lib/postgresql/data ... ok
+asterdex-postgres    | creating subdirectories ... ok
+asterdex-postgres    | selecting dynamic shared memory implementation ... posix
+asterdex-postgres    | selecting default max_connections ... 100
+asterdex-postgres    | selecting default shared_buffers ... 128MB
+asterdex-postgres    | selecting default time zone ... UTC
+asterdex-postgres    | creating configuration files ... ok
+asterdex-postgres    | running bootstrap script ... ok
+asterdex-postgres    | sh: locale: not found
+asterdex-postgres    | 2025-10-23 14:39:06.969 UTC [35] WARNING:  no usable system locales were found
+asterdex-postgres    | performing post-bootstrap initialization ... ok
+asterdex-postgres    | syncing data to disk ... ok
+asterdex-postgres    | 
+asterdex-postgres    | 
+asterdex-postgres    | Success. You can now start the database server using:
+asterdex-postgres    | 
+asterdex-postgres    |     pg_ctl -D /var/lib/postgresql/data -l logfile start
+asterdex-postgres    | 
+asterdex-postgres    | initdb: warning: enabling "trust" authentication for local connections
+asterdex-postgres    | initdb: hint: You can change this by editing pg_hba.conf or using the option -A, or --auth-local and --auth-host, the next time you run initdb.
+asterdex-postgres    | waiting for server to start....2025-10-23 14:39:07.363 UTC [41] LOG:  starting PostgreSQL 15.13 on x86_64-pc-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+asterdex-postgres    | 2025-10-23 14:39:07.364 UTC [41] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+asterdex-postgres    | 2025-10-23 14:39:07.365 UTC [44] LOG:  database system was shut down at 2025-10-23 14:39:07 UTC
+asterdex-postgres    | 2025-10-23 14:39:07.369 UTC [41] LOG:  database system is ready to accept connections
+asterdex-postgres    |  done
+asterdex-postgres    | server started
+asterdex-postgres    | CREATE DATABASE
+asterdex-postgres    | 
+asterdex-postgres    | 
+asterdex-postgres    | /usr/local/bin/docker-entrypoint.sh: ignoring /docker-entrypoint-initdb.d/*
+asterdex-postgres    | 
+asterdex-postgres    | waiting for server to shut down....2025-10-23 14:39:07.497 UTC [41] LOG:  received fast shutdown request
+asterdex-postgres    | 2025-10-23 14:39:07.497 UTC [41] LOG:  aborting any active transactions
+asterdex-postgres    | 2025-10-23 14:39:07.499 UTC [41] LOG:  background worker "logical replication launcher" (PID 47) exited with exit code 1
+asterdex-postgres    | 2025-10-23 14:39:07.500 UTC [42] LOG:  shutting down
+asterdex-postgres    | 2025-10-23 14:39:07.500 UTC [42] LOG:  checkpoint starting: shutdown immediate
+asterdex-postgres    | 2025-10-23 14:39:07.515 UTC [42] LOG:  checkpoint complete: wrote 921 buffers (5.6%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.014 s, sync=0.001 s, total=0.016 s; sync files=301, longest=0.001 s, average=0.001 s; distance=4239 kB, estimate=4239 kB
+asterdex-postgres    | 2025-10-23 14:39:07.521 UTC [41] LOG:  database system is shut down
+asterdex-postgres    |  done
+asterdex-postgres    | server stopped
+asterdex-postgres    | 
+asterdex-postgres    | PostgreSQL init process complete; ready for start up.
+asterdex-postgres    | 
+asterdex-postgres    | 2025-10-23 14:39:07.641 UTC [1] LOG:  starting PostgreSQL 15.13 on x86_64-pc-linux-musl, compiled by gcc (Alpine 14.2.0) 14.2.0, 64-bit
+asterdex-postgres    | 2025-10-23 14:39:07.641 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+asterdex-postgres    | 2025-10-23 14:39:07.641 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+asterdex-postgres    | 2025-10-23 14:39:07.641 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+asterdex-postgres    | 2025-10-23 14:39:07.643 UTC [57] LOG:  database system was shut down at 2025-10-23 14:39:07 UTC
+asterdex-postgres    | 2025-10-23 14:39:07.647 UTC [1] LOG:  database system is ready to accept connections
+asterdex-postgres    | 2025-10-23 14:44:07.653 UTC [55] LOG:  checkpoint starting: time
+asterdex-postgres    | 2025-10-23 14:44:11.765 UTC [55] LOG:  checkpoint complete: wrote 44 buffers (0.3%); 0 WAL file(s) added, 0 removed, 0 recycled; write=4.110 s, sync=0.001 s, total=4.113 s; sync files=12, longest=0.001 s, average=0.001 s; distance=252 kB, estimate=252 kB
