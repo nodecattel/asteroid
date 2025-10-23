@@ -83,7 +83,8 @@ docker-compose up -d
 # 5. View logs to confirm everything is working
 docker-compose logs -f asterdex-bot
 
-# 6. Access dashboard at http://localhost:5000
+# 6. Access dashboard at http://localhost:5000 (or your configured PORT)
+#    Default port is 5000. Change it by setting PORT in .env
 ```
 
 ### Environment Variables Reference
@@ -92,7 +93,7 @@ Your `.env` file must include:
 
 | Variable | Required | Description | Example |
 |----------|----------|-------------|---------|
-| `PORT` | No | Application port | `5000` (default) |
+| `PORT` | No | Application port (default: 5000) | `5000`, `8080`, `45000` |
 | `SESSION_SECRET` | Yes | Session encryption key | Generate with `openssl rand -hex 32` |
 | `BOT_PASSWORD` | Yes | Dashboard login password | Your secure password |
 | `ASTERDEX_API_KEY` | Yes | Aster Dex API key | From your Aster Dex account |
@@ -165,12 +166,18 @@ This only affects external access to PostgreSQL. Internal communication between 
 ### Access the Dashboard
 
 1. Open your browser and navigate to:
-   - Docker: `http://localhost:5000`
-   - Replit: Click the preview URL
+   - **Docker**: `http://localhost:5000` (default) or `http://localhost:${PORT}` if you configured a different port in `.env`
+   - **Replit**: Click the preview URL
 
 2. **Login** with the password you set in `BOT_PASSWORD` environment variable
 
 3. You'll be redirected to the dashboard where you can manage your bots and AI agents
+
+**Port Configuration:**
+- **Default port**: `5000` (used if `PORT` is not set in `.env`)
+- **Custom port**: Set `PORT=8080` (or any port) in your `.env` file
+- **After changing port**: Restart with `docker-compose restart asterdex-bot`
+- **Example**: If you set `PORT=45000` in `.env`, access the dashboard at `http://localhost:45000`
 
 ### Traditional Volume Bots
 
@@ -398,6 +405,31 @@ Unlike traditional bots, AI agents require minimal configuration:
 - **Rate Limit Protection**: Automatic request throttling and backoff
 - **HTTPS**: Automatic when deployed on Replit (published apps)
 
+## Deployment Verification
+
+After deployment, verify everything is working:
+
+```bash
+# Check container status
+docker-compose ps
+
+# View application logs and find the port it's listening on
+docker-compose logs asterdex-bot | grep "serving on port"
+
+# Test health endpoint (replace 5000 with your configured PORT)
+curl http://localhost:5000/api/health
+
+# Access the dashboard in your browser
+# Default: http://localhost:5000
+# Or use your configured PORT: http://localhost:${PORT}
+```
+
+**What to look for:**
+- Both containers should show `Up` status
+- Logs should show `serving on port 5000` (or your configured PORT)
+- Health endpoint should return HTTP 200
+- Dashboard should load without errors
+
 ## Troubleshooting
 
 ### "tsx: not found" error in Docker logs
@@ -422,52 +454,182 @@ docker-compose logs -f asterdex-bot
 
 **What was fixed:** The Dockerfile now uses a multi-stage build that properly installs all dependencies (including build tools like tsx), builds the TypeScript application, then creates a lean production image with only the compiled code and runtime dependencies.
 
-### Services won't start
+### Understanding Port Configuration
+
+**Important**: The application port is configurable and depends on your `.env` file:
+
+- **Default port**: `5000` (used if `PORT` is not set in `.env`)
+- **Custom port**: Set `PORT=YOUR_PORT` in `.env` to use a different port
+- **Check current port**: Run `docker-compose logs asterdex-bot | grep "serving on port"`
+- **Access dashboard**: Use `http://localhost:${PORT}` where `${PORT}` is your configured port
+
+**Example scenarios:**
 ```bash
-# Check Docker is running
+# Scenario 1: Default port (5000)
+# .env has no PORT set or PORT=5000
+# Access at: http://localhost:5000
+
+# Scenario 2: Custom port (8080)
+# .env has PORT=8080
+# Access at: http://localhost:8080
+
+# Scenario 3: Custom port (45000)
+# .env has PORT=45000
+# Access at: http://localhost:45000
+```
+
+### Services won't start
+
+**Check Docker is running:**
+```bash
 docker ps
+```
 
-# View detailed logs
+**View detailed logs:**
+```bash
 docker-compose logs
+```
 
-# Rebuild images
+**Rebuild images:**
+```bash
 docker-compose build --no-cache
 ```
 
-### Can't access dashboard
-```bash
-# Check if port is in use
-netstat -an | grep 5000
+**Common causes:**
+- Missing `.env` file - Copy from `.env.example`
+- Missing required environment variables
+- Port already in use
+- Insufficient disk space
 
-# Change port in .env file
-PORT=8080
-docker-compose restart
+### Can't access dashboard
+
+**First, check what port the application is using:**
+```bash
+# View logs to see which port the app is listening on
+docker-compose logs asterdex-bot | grep "serving on port"
 ```
 
-### Database connection issues
+**Check if the port is in use:**
 ```bash
-# Check PostgreSQL is running
+# Replace 5000 with your configured PORT if different
+netstat -an | grep 5000
+# or
+ss -tlnp | grep 5000
+```
+
+**If port is already in use, change it in .env:**
+```env
+PORT=8080
+```
+
+**Restart the service:**
+```bash
+docker-compose restart asterdex-bot
+```
+
+**Test connectivity (replace 5000 with your PORT):**
+```bash
+curl -v http://localhost:5000/
+```
+
+**Verify the application is running:**
+```bash
+docker-compose logs asterdex-bot | tail -20
+```
+
+**Common issues:**
+- **Port already in use**: Change `PORT` in `.env` to an available port (e.g., 8080, 3000, 45000)
+- **Application not responding**: Wait 10-15 seconds for startup, then check logs
+- **Wrong port in browser**: Verify the port in logs matches what you're accessing
+
+### Database connection issues
+
+**Check PostgreSQL is running:**
+```bash
 docker-compose ps
-
-# View PostgreSQL logs
 docker-compose logs postgres
+```
 
-# Reset database
+**Verify DATABASE_URL is correct:**
+```bash
+grep DATABASE_URL .env
+```
+
+**Reset database (WARNING: deletes all data):**
+```bash
 docker-compose down -v
 docker-compose up -d
 ```
 
-### AI agents not available
+### Application crashes or won't start
+
+**Check logs for errors:**
 ```bash
-# Check if AI provider API keys are configured
-grep "ANTHROPIC_API_KEY\|OPENAI_API_KEY" .env
-
-# Verify API keys are valid by checking logs
-docker-compose logs -f asterdex-bot | grep "available-models"
-
-# Add API keys to .env file and restart
-docker-compose restart
+docker-compose logs asterdex-bot | tail -100
 ```
+
+**Common error messages:**
+- `tsx: not found` - Dev dependencies not installed (rebuild with `docker-compose build --no-cache`)
+- `EADDRINUSE` - Port already in use (change PORT in .env)
+- `Connection refused` - Database not ready (wait 30 seconds and retry)
+
+### AI agents not available
+
+**Check if AI provider API keys are configured:**
+```bash
+grep "ANTHROPIC_API_KEY\|OPENAI_API_KEY" .env
+```
+
+**Verify API keys are valid by checking logs:**
+```bash
+docker-compose logs -f asterdex-bot | grep -i "model\|agent"
+```
+
+**Add API keys to .env file and restart:**
+```bash
+# Edit .env
+nano .env
+
+# Restart service
+docker-compose restart asterdex-bot
+```
+
+### Performance issues
+
+**Check resource usage:**
+```bash
+docker stats asterdex-volume-bot
+```
+
+**Increase resource limits:**
+```bash
+# Edit docker-compose.yml and add:
+deploy:
+  resources:
+    limits:
+      cpus: '2'
+      memory: 2G
+```
+
+### WebSocket connection issues
+
+**Check if WebSocket is working:**
+```bash
+curl -i -N -H "Connection: Upgrade" -H "Upgrade: websocket" http://localhost:5000/socket.io/
+```
+
+**Verify Socket.IO is running:**
+```bash
+docker-compose logs asterdex-bot | grep -i "socket\|websocket"
+```
+
+## Getting Help
+
+1. **Run verification script**: `./verify-deployment.sh`
+2. **Check logs**: `docker-compose logs -f`
+3. **Review configuration**: Check `.env` file
+4. **See deployment guide**: Read [DEPLOYMENT.md](DEPLOYMENT.md)
+5. **Check Aster Dex API docs**: https://asterdex.com
 
 ## Development
 
@@ -518,16 +680,24 @@ npm start
 
 ## Files Overview
 
+### Deployment & Configuration
 - `asteroid.sh` - Interactive setup wizard for first-time users
-- `docker-compose.yml` - Docker Compose configuration
-- `Dockerfile` - Docker image definition
+- `verify-deployment.sh` - Automated deployment verification script
+- `DEPLOYMENT.md` - Comprehensive deployment guide for production
+- `docker-compose.yml` - Docker Compose configuration (production-ready)
+- `Dockerfile` - Docker image definition with health checks
 - `.dockerignore` - Files to exclude from Docker build
 - `.env.example` - Environment variable template with AI provider keys
+
+### Backend Services
 - `server/exchange-info-cache.ts` - Exchange info caching with 5-min refresh
 - `server/asterdex-client.ts` - Complete Aster Dex API client (60+ methods)
 - `server/user-data-stream.ts` - WebSocket user data stream manager
 - `server/bot-engine.ts` - Core trading bot logic
 - `server/agent-monitor.ts` - AI agent monitoring with dual target system
+- `server/mcp-server.ts` - Model Context Protocol server for AI agents
+
+### Frontend Components
 - `client/src/pages/Dashboard.tsx` - Unified dashboard for bots and agents
 - `client/src/pages/agents.tsx` - AI agent management interface
 - `client/src/components/MarketPairs.tsx` - Dynamic market selector with favorites

@@ -4,3 +4,47 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Temporary documentation files (created during troubleshooting)
+ACCESS_DASHBOARD.md
+CHANGES.md
+DEPLOYMENT.md
+DEPLOYMENT_SUMMARY.md
+DEPLOYMENT_VERIFICATION_REPORT.md
+DOCUMENTATION_INDEX.md
+PORT_CONFIGURATION_FIX.md
+PORT_FIX_SUMMARY.md
+QUICK_REFERENCE.md
+
+# Temporary scripts and backups
+verify-deployment.sh
+docker-compose.yml.bak
+
+# IDE and OS files
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.env.swp
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Build artifacts
+build/
+out/

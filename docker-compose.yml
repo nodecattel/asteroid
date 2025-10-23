@@ -4,7 +4,7 @@ services:
     container_name: asterdex-volume-bot
     restart: unless-stopped
     ports:
-      - "${PORT:-5000}:5000"
+      - "${PORT:-5000}:${PORT:-5000}"
     environment:
       - NODE_ENV=production
       - PORT=${PORT:-5000}
@@ -14,28 +14,25 @@ services:
       - ASTERDEX_API_SECRET=${ASTERDEX_API_SECRET}
       - DATABASE_URL=${DATABASE_URL}
       # AI Provider API Keys (Optional - For AI Trading Agents)
-      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
-      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY:-}
-      - XAI_API_KEY=${XAI_API_KEY:-}
-      - QWEN_API_KEY=${QWEN_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - XAI_API_KEY=${XAI_API_KEY}
+      - QWEN_API_KEY=${QWEN_API_KEY}
       # MCP Server Configuration
       - MCP_PORT=${MCP_PORT:-3001}
     volumes:
       - ./data:/app/data
     networks:
       - asterdex-network
-    depends_on:
-      postgres:
-        condition: service_healthy
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5000/api/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:${PORT:-5000}/api/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
 
-  # PostgreSQL database for persistent storage
+  # Optional: PostgreSQL database (uncomment if you want to use persistent storage)
   postgres:
     image: postgres:15-alpine
     container_name: asterdex-postgres

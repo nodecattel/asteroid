@@ -5,7 +5,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import { useLocation } from "wouter";
-import asteroidLogo from "@assets/asteroid_1761014274709.png";
+import asteroidLogo from "/asteroid_1761014274709.png";
 
 interface StatusBarProps {
   botStatus: "running" | "paused" | "stopped" | "error";

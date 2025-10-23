@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { queryClient } from "@/lib/queryClient";
 import Footer from "@/components/Footer";
-import asteroidLogo from "@assets/asteroid_1761014274709.png";
+import asteroidLogo from "/asteroid_1761014274709.png";
 
 export default function Login() {
   const [, setLocation] = useLocation();
